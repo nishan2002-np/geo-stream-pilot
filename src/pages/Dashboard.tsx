@@ -4,6 +4,7 @@ import MapView from '@/components/MapView';
 import DeviceList from '@/components/DeviceList';
 import AlertsPanel from '@/components/AlertsPanel';
 import TelemetryPanel from '@/components/TelemetryPanel';
+import MeitrackEventAlert from '@/components/MeitrackEventAlert';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -215,6 +216,15 @@ const Dashboard = () => {
           />
         </motion.aside>
       </div>
+
+      {/* Meitrack Event Alerts */}
+      <MeitrackEventAlert
+        devices={devices}
+        positions={positions}
+        onAcknowledge={(eventId) => {
+          console.log('Event acknowledged:', eventId);
+        }}
+      />
 
       {/* Bottom Panel - Telemetry */}
       {selectedDevice && selectedPosition && (

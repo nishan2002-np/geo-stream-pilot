@@ -358,6 +358,23 @@ class TraccarAPI {
 
   private getMockPositions(): Position[] {
     const baseTime = new Date();
+    
+    // Generate dynamic data with real movement simulation
+    const generateDynamicPosition = (deviceId: number, basePos: { lat: number; lng: number }, speed: number) => {
+      const timeOffset = (Date.now() % 300000) / 300000; // 5-minute cycle
+      const movement = 0.001 * timeOffset * (speed / 50); // Scale movement by speed
+      
+      return {
+        latitude: basePos.lat + (Math.sin(timeOffset * Math.PI * 2) * movement),
+        longitude: basePos.lng + (Math.cos(timeOffset * Math.PI * 2) * movement),
+        speed: Math.max(0, speed + (Math.sin(timeOffset * Math.PI * 4) * 10)), // Dynamic speed
+      };
+    };
+
+    const vehicle1 = generateDynamicPosition(1, { lat: 27.7172, lng: 85.3240 }, 45);
+    const vehicle2 = generateDynamicPosition(2, { lat: 27.7219, lng: 85.3206 }, 0);
+    const vehicle3 = generateDynamicPosition(3, { lat: 27.7089, lng: 85.3206 }, 25);
+
     return [
       {
         id: 1,
@@ -368,24 +385,25 @@ class TraccarAPI {
         serverTime: baseTime.toISOString(),
         outdated: false,
         valid: true,
-        latitude: 27.7172,
-        longitude: 85.3240,
+        latitude: vehicle1.latitude,
+        longitude: vehicle1.longitude,
         altitude: 1350,
-        speed: 45.5,
+        speed: vehicle1.speed,
         course: 180,
-        address: 'Kathmandu, Nepal',
+        address: 'Near Thamel, Kathmandu',
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: 75,
+          fuel: Math.max(10, 75 - ((Date.now() % 300000) / 300000 * 20)), // Decreasing fuel
           battery: 95,
-          gsm: 85,
+          gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
           io1: true,
           adc1: 2.4,
-          temp1: 28.5,
+          temp1: 28.5 + (Math.random() * 5), // Dynamic temperature
           image: 'snapshot_001.jpg',
           mediaId: 101,
+          event: Math.random() > 0.95 ? 35 : null, // Random overspeed event
         },
       },
       {
@@ -397,24 +415,25 @@ class TraccarAPI {
         serverTime: new Date(baseTime.getTime() - 300000).toISOString(),
         outdated: false,
         valid: true,
-        latitude: 27.7219,
-        longitude: 85.3206,
+        latitude: vehicle2.latitude,
+        longitude: vehicle2.longitude,
         altitude: 1345,
-        speed: 0,
+        speed: vehicle2.speed,
         course: 90,
-        address: 'Thamel, Kathmandu',
+        address: 'Near Ratna Park, Kathmandu',
         accuracy: 2.8,
         attributes: {
           ignition: false,
           fuel: 45,
           battery: 78,
-          gsm: 92,
+          gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
           io1: false,
           adc1: 1.8,
-          temp1: 25.2,
+          temp1: 25.2 + (Math.random() * 3),
           image: 'snapshot_002.jpg',
           mediaId: 102,
+          event: Math.random() > 0.97 ? 39 : null, // Random low fuel event
         },
       },
       {
@@ -426,25 +445,26 @@ class TraccarAPI {
         serverTime: new Date(baseTime.getTime() - 30000).toISOString(),
         outdated: false,
         valid: true,
-        latitude: 27.7089,
-        longitude: 85.3206,
+        latitude: vehicle3.latitude,
+        longitude: vehicle3.longitude,
         altitude: 1340,
-        speed: 25.0,
+        speed: vehicle3.speed,
         course: 45,
-        address: 'New Road, Kathmandu',
+        address: 'Near Durbar Square, Kathmandu',
         accuracy: 4.1,
         attributes: {
           ignition: true,
           fuel: 60,
           battery: 88,
-          gsm: 78,
+          gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,
           io1: true,
           adc1: 2.1,
-          temp1: 32.1,
+          temp1: 32.1 + (Math.random() * 4),
           image: 'snapshot_003.jpg',
           mediaId: 103,
           passengers: 45,
+          event: Math.random() > 0.98 ? 41 : null, // Random ignition event
         },
       },
     ];

@@ -62,10 +62,14 @@ All colors MUST be HSL.
     --marker-selected: 134 100% 65%;
     --geofence: 275 100% 65%;
     
-    /* Status indicators */
-    --fuel-high: 134 100% 50%;
-    --fuel-medium: 45 100% 65%;
-    --fuel-low: 0 85% 60%;
+  /* Fuel level indicators */
+  --fuel-high: 120 100% 45%;
+  --fuel-medium: 45 100% 55%;
+  --fuel-low: 0 85% 60%;
+
+  /* Real-time animations */
+  --pulse-gps: 0 0 20px hsl(var(--primary) / 0.8);
+  --trail-opacity: 0.8;
     
     /* Glass effect for panels */
     --glass-bg: 220 25% 8% / 0.8;
@@ -194,17 +198,28 @@ All colors MUST be HSL.
 }
 
 @layer utilities {
-  /* Animations for GPS tracking */
-  @keyframes pulse-gps {
-    0%, 100% {
-      transform: scale(1);
-      opacity: 1;
-    }
-    50% {
-      transform: scale(1.05);
-      opacity: 0.8;
-    }
+/* Custom animations */
+@keyframes pulse-gps {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+    box-shadow: 0 0 10px hsl(var(--primary) / 0.6);
   }
+  50% {
+    opacity: 0.7;
+    transform: scale(1.2);
+    box-shadow: var(--pulse-gps);
+  }
+}
+
+@keyframes trail-flow {
+  0% {
+    opacity: var(--trail-opacity);
+  }
+  100% {
+    opacity: calc(var(--trail-opacity) * 0.5);
+  }
+}
 
   @keyframes move-marker {
     from {
@@ -224,9 +239,19 @@ All colors MUST be HSL.
     }
   }
 
-  .animate-pulse-gps {
-    animation: pulse-gps 2s infinite;
-  }
+/* Utility classes */
+.animate-pulse-gps {
+  animation: pulse-gps 2s ease-in-out infinite;
+}
+
+.animate-trail-flow {
+  animation: trail-flow 3s ease-in-out infinite alternate;
+}
+
+/* Map marker styles */
+.custom-marker .moving-indicator {
+  animation: pulse-gps 1.5s ease-in-out infinite;
+}
 
   .animate-move-marker {
     animation: move-marker 1s ease-out;

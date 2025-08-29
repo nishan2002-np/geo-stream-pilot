@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Device, Position } from '@/types/tracking';
 import { resolveMediaUrl, getMockSnapshotUrl } from '@/utils/media';
+import { getAddressFromCoordinates } from '@/utils/geocoding';
 import dayjs from 'dayjs';
 
 interface DevicePopupProps {
@@ -37,17 +38,61 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
 }) => {
   const [showAttributes, setShowAttributes] = useState(false);
   const [imageError, setImageError] = useState(false);
+  const [resolvedAddress, setResolvedAddress] = useState<string>('');
+
+  // Resolve address from coordinates
+  useEffect(() => {
+    const resolveAddress = async () => {
+      try {
+        const address = await getAddressFromCoordinates(position.latitude, position.longitude);
+        setResolvedAddress(address);
+      } catch (error) {
+        console.error('Failed to resolve address:', error);
+        setResolvedAddress(position.address || 'Address not available');
+      }
+    };
+
+    resolveAddress();
+  }, [position.latitude, position.longitude, position.address]);
 
   const mediaInfo = resolveMediaUrl(position.attributes, position.id);
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
-  // Get fuel level with color coding
-  const fuelLevel = parseInt(position.attributes?.fuel || '0');
+  // Real fuel calculations
+  const fuelPercentage = parseInt(position.attributes?.fuel || '0');
+  const maxFuelCapacity = 360; // liters for trucks/buses
+  const actualFuelLiters = Math.round((fuelPercentage / 100) * maxFuelCapacity);
+  const rangeKm = actualFuelLiters * 8; // 1 liter = 8 km
+  
   const getFuelColor = (level: number) => {
     if (level > 60) return 'text-fuel-high';
     if (level > 30) return 'text-fuel-medium';
     return 'text-fuel-low';
   };
+
+  // Protocol-specific signal display
+  const getSignalInfo = () => {
+    const protocol = position.protocol?.toLowerCase();
+    const signalStrength = parseInt(position.attributes?.gsm || '0');
+    
+    if (protocol === 'meitrack') {
+      return {
+        type: 'WiFi',
+        icon: '📶',
+        strength: signalStrength,
+        color: signalStrength > 70 ? 'text-green-500' : signalStrength > 40 ? 'text-yellow-500' : 'text-red-500'
+      };
+    } else {
+      return {
+        type: 'GSM',
+        icon: '📱',
+        strength: signalStrength,
+        color: signalStrength > 70 ? 'text-green-500' : signalStrength > 40 ? 'text-yellow-500' : 'text-red-500'
+      };
+    }
+  };
+
+  const signalInfo = getSignalInfo();
 
   // Format attributes for display
   const formatAttributeValue = (key: string, value: any) => {
@@ -64,12 +109,14 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   };
 
   const importantAttributes = {
-    'Ignition': position.attributes?.ignition,
-    'Fuel': `${fuelLevel}%`,
+    'Ignition': position.attributes?.ignition ? '🟢 ON' : '🔴 OFF',
+    'Fuel': `${fuelPercentage}% (${actualFuelLiters}L)`,
+    'Range': `${rangeKm} km remaining`,
     'Battery': `${position.attributes?.battery || 0}%`,
-    'GSM Signal': `${position.attributes?.gsm || 0}%`,
-    'Satellites': position.attributes?.satellites || 0,
-    'Temperature': position.attributes?.temp1 ? `${position.attributes.temp1}°C` : 'N/A',
+    [`${signalInfo.type} Signal`]: `${signalInfo.icon} ${signalInfo.strength}%`,
+    'Satellites': `🛰️ ${position.attributes?.satellites || 0}`,
+    'Temperature': position.attributes?.temp1 ? `🌡️ ${position.attributes.temp1}°C` : 'N/A',
+    'Protocol': position.protocol?.toUpperCase() || 'Unknown',
   };
 
   return (
@@ -120,9 +167,9 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
                 {position.latitude.toFixed(6)}, {position.longitude.toFixed(6)}
               </span>
             </div>
-            {position.address && (
+            {resolvedAddress && (
               <p className="text-sm text-muted-foreground pl-6">
-                {position.address}
+                📍 {resolvedAddress}
               </p>
             )}
             <div className="flex items-center gap-4 text-sm">
@@ -141,11 +188,15 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-1">
-                <Fuel className={`h-4 w-4 ${getFuelColor(fuelLevel)}`} />
+                <Fuel className={`h-4 w-4 ${getFuelColor(fuelPercentage)}`} />
                 <span className="text-sm font-medium">Fuel</span>
               </div>
-              <Progress value={fuelLevel} className="h-2" />
-              <span className="text-xs text-muted-foreground">{fuelLevel}%</span>
+              <Progress value={fuelPercentage} className="h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>{fuelPercentage}%</span>
+                <span>{actualFuelLiters}L</span>
+              </div>
+              <div className="text-xs text-primary">Range: {rangeKm}km</div>
             </div>
 
             <div className="space-y-1">

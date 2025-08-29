@@ -99,42 +99,70 @@ const MapView: React.FC<MapViewProps> = ({
     }).addTo(mapRef.current);
   }, [mapStyle]);
 
-  // Create device markers
+  // Create device markers with smooth updates
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => {
-      mapRef.current!.removeLayer(marker);
-    });
-    markersRef.current.clear();
-
-    // Add device markers
+    // Update existing markers or create new ones
     devices.forEach(device => {
       const position = positions.find(p => p.deviceId === device.id);
       if (!position) return;
 
-      const icon = createDeviceIcon(device, position);
-      const marker = L.marker([position.latitude, position.longitude], { icon })
-        .addTo(mapRef.current!);
+      const existingMarker = markersRef.current.get(device.id);
+      const newLatLng = L.latLng(position.latitude, position.longitude);
+      
+      if (existingMarker) {
+        // Smooth marker movement
+        const currentLatLng = existingMarker.getLatLng();
+        if (currentLatLng.lat !== newLatLng.lat || currentLatLng.lng !== newLatLng.lng) {
+          // Animate marker to new position
+          existingMarker.setLatLng(newLatLng);
+          
+          // Update trail for moving devices
+          if (device.status === 'moving' && showTrails) {
+            updateDeviceTrail(device.id, newLatLng);
+          }
+        }
+        
+        // Update marker icon for status changes
+        const newIcon = createDeviceIcon(device, position);
+        existingMarker.setIcon(newIcon);
+      } else {
+        // Create new marker
+        const icon = createDeviceIcon(device, position);
+        const marker = L.marker([position.latitude, position.longitude], { icon })
+          .addTo(mapRef.current!);
 
-      // Add click handler
-      marker.on('click', () => {
-        onDeviceSelect(device.id);
-        setPopupDevice({ device, position });
-      });
+        // Add click handler
+        marker.on('click', () => {
+          onDeviceSelect(device.id);
+          setPopupDevice({ device, position });
+        });
 
-      markersRef.current.set(device.id, marker);
+        markersRef.current.set(device.id, marker);
+      }
     });
 
-    // Fit bounds if devices exist
-    if (devices.length > 0 && positions.length > 0) {
+    // Remove markers for devices that no longer exist
+    markersRef.current.forEach((marker, deviceId) => {
+      if (!devices.find(d => d.id === deviceId)) {
+        mapRef.current!.removeLayer(marker);
+        markersRef.current.delete(deviceId);
+        trailsRef.current.get(deviceId)?.remove();
+        trailsRef.current.delete(deviceId);
+      }
+    });
+
+    // Initial fit bounds only on first load
+    if (devices.length > 0 && positions.length > 0 && markersRef.current.size === devices.length) {
       const bounds = L.latLngBounds(
         positions.map(p => [p.latitude, p.longitude])
       );
-      mapRef.current.fitBounds(bounds, { padding: [20, 20] });
+      if (bounds.isValid()) {
+        mapRef.current.fitBounds(bounds, { padding: [20, 20], maxZoom: 15 });
+      }
     }
-  }, [devices, positions, onDeviceSelect]);
+  }, [devices, positions, onDeviceSelect, showTrails]);
 
   // Update trails
   useEffect(() => {
@@ -221,6 +249,33 @@ const MapView: React.FC<MapViewProps> = ({
       default: '📍',
     };
     return `<span class="text-xs">${iconMap[category] || iconMap.default}</span>`;
+  };
+
+  // Update device trail for smooth movement
+  const updateDeviceTrail = (deviceId: number, newLatLng: L.LatLng) => {
+    let trail = trailsRef.current.get(deviceId);
+    const device = devices.find(d => d.id === deviceId);
+    
+    if (!trail && device) {
+      // Create new trail
+      trail = L.polyline([newLatLng], {
+        color: getStatusColor(device.status),
+        weight: 3,
+        opacity: 0.8,
+      }).addTo(mapRef.current!);
+      trailsRef.current.set(deviceId, trail);
+    } else if (trail) {
+      // Add point to existing trail
+      const latlngs = trail.getLatLngs() as L.LatLng[];
+      latlngs.push(newLatLng);
+      
+      // Keep only last 50 points to avoid performance issues
+      if (latlngs.length > 50) {
+        latlngs.shift();
+      }
+      
+      trail.setLatLngs(latlngs);
+    }
   };
 
   const handleLocateUser = () => {
