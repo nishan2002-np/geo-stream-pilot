@@ -394,16 +394,30 @@ class TraccarAPI {
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: Math.max(10, 75 - ((Date.now() % 300000) / 300000 * 20)), // Decreasing fuel
+          fuel: 100, // Always 100% for online vehicles as requested
           battery: 95,
           gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
           io1: true,
+          io2: false,
+          io3: true,
           adc1: 2.4,
+          adc2: 1.8,
           temp1: 28.5 + (Math.random() * 5), // Dynamic temperature
+          temp2: 32.1 + (Math.random() * 3),
+          voltage: 12.6,
+          current: 2.1,
+          power: 26.5,
+          rpm: 2150,
+          engineHours: 1245,
+          odometer: 125430,
           image: 'snapshot_001.jpg',
           mediaId: 101,
+          protocol: 'meitrack',
+          phoneCall: false,
           event: Math.random() > 0.95 ? 35 : null, // Random overspeed event
+          driverCard: 'DRIVER001',
+          driverName: 'Ram Bahadur',
         },
       },
       {
@@ -424,16 +438,30 @@ class TraccarAPI {
         accuracy: 2.8,
         attributes: {
           ignition: false,
-          fuel: 45,
+          fuel: 100, // Always 100% for online vehicles as requested
           battery: 78,
           gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
           io1: false,
+          io2: true,
+          io3: false,
           adc1: 1.8,
+          adc2: 2.2,
           temp1: 25.2 + (Math.random() * 3),
+          temp2: 27.8 + (Math.random() * 2),
+          voltage: 12.4,
+          current: 0.8,
+          power: 9.9,
+          rpm: 0,
+          engineHours: 987,
+          odometer: 89432,
           image: 'snapshot_002.jpg',
           mediaId: 102,
-          event: Math.random() > 0.97 ? 39 : null, // Random low fuel event
+          protocol: 'meitrack',
+          phoneCall: Math.random() > 0.98, // Random phone call
+          event: Math.random() > 0.97 ? 42 : null, // Random ignition off event
+          driverCard: 'DRIVER002',
+          driverName: 'Shyam Gurung',
         },
       },
       {
@@ -454,17 +482,34 @@ class TraccarAPI {
         accuracy: 4.1,
         attributes: {
           ignition: true,
-          fuel: 60,
+          fuel: 100, // Always 100% for online vehicles as requested
           battery: 88,
           gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,
           io1: true,
+          io2: false,
+          io3: true,
+          io4: true,
           adc1: 2.1,
+          adc2: 1.9,
           temp1: 32.1 + (Math.random() * 4),
+          temp2: 35.6 + (Math.random() * 3),
+          voltage: 12.8,
+          current: 3.2,
+          power: 41.0,
+          rpm: 1890,
+          engineHours: 2156,
+          odometer: 234567,
+          passengers: 45,
+          maxPassengers: 60,
+          doorOpen: false,
           image: 'snapshot_003.jpg',
           mediaId: 103,
-          passengers: 45,
+          protocol: 'meitrack',
+          phoneCall: false,
           event: Math.random() > 0.98 ? 41 : null, // Random ignition event
+          driverCard: 'DRIVER003',
+          driverName: 'Hari Thapa',
         },
       },
     ];

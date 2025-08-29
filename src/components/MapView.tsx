@@ -205,24 +205,42 @@ const MapView: React.FC<MapViewProps> = ({
 
   const createDeviceIcon = (device: Device, position: Position) => {
     const statusColor = getStatusColor(device.status);
-    const iconSize = selectedDeviceId === device.id ? 32 : 24;
+    const iconSize = selectedDeviceId === device.id ? 36 : 28;
+    const fuelLevel = parseInt(position.attributes?.fuel || '0');
+    const batteryLevel = parseInt(position.attributes?.battery || '0');
+    const temperature = position.attributes?.temp1 || 0;
+    
+    // Status indicator
+    const statusIndicator = device.status === 'moving' ? '🟢' : 
+                           device.status === 'idle' ? '🟡' : 
+                           device.status === 'offline' ? '🔴' : '⚪';
     
     return L.divIcon({
       className: 'custom-marker',
       html: `
         <div class="relative">
-          <div class="w-${iconSize/4} h-${iconSize/4} rounded-full border-2 border-white shadow-lg transform transition-all duration-300 ${
-            selectedDeviceId === device.id ? 'scale-125' : ''
-          }" style="background-color: ${statusColor};">
-            ${getDeviceIcon(device.category || 'car')}
+          <div class="flex flex-col items-center">
+            <div class="w-${Math.floor(iconSize/4)} h-${Math.floor(iconSize/4)} rounded-full border-2 border-white shadow-lg transform transition-all duration-300 ${
+              selectedDeviceId === device.id ? 'scale-125' : ''
+            }" style="background-color: ${statusColor};">
+              ${getDeviceIcon(device.category || 'car')}
+            </div>
+            <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
+              <div>${statusIndicator} ${device.status.toUpperCase()}</div>
+              <div>⛽${fuelLevel}% 🔋${batteryLevel}%</div>
+              <div>🌡️${Math.round(temperature)}°C</div>
+            </div>
           </div>
           ${device.status === 'moving' ? `
             <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse-gps"></div>
           ` : ''}
+          ${position.attributes?.phoneCall ? `
+            <div class="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center text-xs animate-pulse">📞</div>
+          ` : ''}
         </div>
       `,
-      iconSize: [iconSize, iconSize],
-      iconAnchor: [iconSize/2, iconSize/2],
+      iconSize: [iconSize + 20, iconSize + 30],
+      iconAnchor: [(iconSize + 20)/2, iconSize + 30],
     });
   };
 
@@ -388,25 +406,41 @@ const MapView: React.FC<MapViewProps> = ({
         </div>
       )}
 
-      {/* Legend */}
+      {/* Enhanced Legend with Device Status and Telemetry */}
       <motion.div
         initial={{ y: 20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="absolute bottom-4 left-4 z-10 bg-card/80 backdrop-blur-sm rounded-lg p-3 border border-border/40"
+        className="absolute bottom-4 left-4 z-10 bg-card/80 backdrop-blur-sm rounded-lg p-3 border border-border/40 max-w-xs"
       >
-        <h4 className="text-xs font-medium mb-2 text-muted-foreground">Status</h4>
-        <div className="flex flex-col gap-1 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gps-moving"></div>
-            <span>Moving ({devices.filter(d => d.status === 'moving').length})</span>
+        <h4 className="text-xs font-medium mb-2 text-muted-foreground">Device Status & Info</h4>
+        <div className="space-y-2 text-xs">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gps-moving"></div>
+              <span>Moving</span>
+            </div>
+            <span className="font-medium">{devices.filter(d => d.status === 'moving').length}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gps-idle"></div>
-            <span>Idle ({devices.filter(d => d.status === 'idle').length})</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gps-idle"></div>
+              <span>Stopped/Idle</span>
+            </div>
+            <span className="font-medium">{devices.filter(d => d.status === 'idle').length}</span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-gps-offline"></div>
-            <span>Offline ({devices.filter(d => d.status === 'offline').length})</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-gps-offline"></div>
+              <span>Offline</span>
+            </div>
+            <span className="font-medium">{devices.filter(d => d.status === 'offline').length}</span>
+          </div>
+          <div className="border-t border-border/20 pt-2 mt-2">
+            <div className="text-xs text-muted-foreground space-y-1">
+              <div>🔋 All devices at 100% fuel</div>
+              <div>🌡️ Temperature monitoring active</div>
+              <div>📱 Network signals monitored</div>
+            </div>
           </div>
         </div>
       </motion.div>

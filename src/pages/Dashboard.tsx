@@ -43,7 +43,7 @@ const Dashboard = () => {
         setDevices(devicesData);
         setPositions(positionsData);
         
-        // Generate some mock alerts for demo
+        // Generate comprehensive alerts for demo
         const mockAlerts: Alert[] = [
           {
             id: 'alert-1',
@@ -51,11 +51,12 @@ const Dashboard = () => {
             deviceId: 1,
             deviceName: 'Fleet Vehicle 001',
             severity: 'high',
-            message: 'Vehicle exceeding speed limit (65 km/h in 50 km/h zone)',
+            message: 'Vehicle exceeding speed limit (85 km/h in 60 km/h zone)',
             timestamp: new Date(Date.now() - 300000).toISOString(),
             latitude: 27.7172,
             longitude: 85.3240,
             acknowledged: false,
+            attributes: { speed: 85, speedLimit: 60 }
           },
           {
             id: 'alert-2',
@@ -63,10 +64,90 @@ const Dashboard = () => {
             deviceId: 2,
             deviceName: 'Delivery Truck 002',
             severity: 'medium',
-            message: 'Low fuel level detected (15% remaining)',
+            message: 'Fuel level normal at 100%',
             timestamp: new Date(Date.now() - 600000).toISOString(),
             acknowledged: false,
+            attributes: { fuelLevel: 100 }
           },
+          {
+            id: 'alert-3',
+            type: 'battery',
+            deviceId: 3,
+            deviceName: 'Bus Route A',
+            severity: 'low',
+            message: 'Battery level at 88% - Normal operation',
+            timestamp: new Date(Date.now() - 900000).toISOString(),
+            acknowledged: false,
+            attributes: { batteryLevel: 88 }
+          },
+          {
+            id: 'alert-4',
+            type: 'network',
+            deviceId: 1,
+            deviceName: 'Fleet Vehicle 001',
+            severity: 'medium',
+            message: 'WiFi signal strength: 85% (Meitrack Protocol)',
+            timestamp: new Date(Date.now() - 150000).toISOString(),
+            acknowledged: false,
+            attributes: { signalStrength: 85, protocol: 'meitrack' }
+          },
+          {
+            id: 'alert-5',
+            type: 'maintenance',
+            deviceId: 2,
+            deviceName: 'Delivery Truck 002',
+            severity: 'low',
+            message: 'Temperature normal at 25.2°C',
+            timestamp: new Date(Date.now() - 450000).toISOString(),
+            acknowledged: false,
+            attributes: { temperature: 25.2 }
+          },
+          {
+            id: 'alert-6',
+            type: 'geofence',
+            deviceId: 3,
+            deviceName: 'Bus Route A',
+            severity: 'medium',
+            message: 'Vehicle entered designated route area',
+            timestamp: new Date(Date.now() - 120000).toISOString(),
+            latitude: 27.7089,
+            longitude: 85.3206,
+            acknowledged: false,
+            attributes: { geofenceName: 'Bus Route Zone A' }
+          },
+          {
+            id: 'alert-7',
+            type: 'sos',
+            deviceId: 1,
+            deviceName: 'Fleet Vehicle 001',
+            severity: 'critical',
+            message: 'Emergency button test - All systems operational',
+            timestamp: new Date(Date.now() - 30000).toISOString(),
+            acknowledged: false,
+            attributes: { testMode: true }
+          },
+          {
+            id: 'alert-8',
+            type: 'weather',
+            deviceId: 2,
+            deviceName: 'Delivery Truck 002',
+            severity: 'low',
+            message: 'Weather conditions normal - Clear skies',
+            timestamp: new Date(Date.now() - 800000).toISOString(),
+            acknowledged: false,
+            attributes: { weather: 'clear', visibility: 'good' }
+          },
+          {
+            id: 'alert-9',
+            type: 'traffic',
+            deviceId: 3,
+            deviceName: 'Bus Route A',
+            severity: 'medium',
+            message: 'Light traffic detected on current route',
+            timestamp: new Date(Date.now() - 200000).toISOString(),
+            acknowledged: false,
+            attributes: { trafficLevel: 'light' }
+          }
         ];
         setAlerts(mockAlerts);
         

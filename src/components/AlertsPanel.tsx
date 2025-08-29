@@ -21,6 +21,12 @@ import {
   Filter,
   Download,
   Eye,
+  Battery,
+  Settings,
+  Car,
+  MapPin,
+  Shield,
+  Circle,
 } from 'lucide-react';
 import { Alert } from '@/types/tracking';
 import dayjs from 'dayjs';
@@ -49,22 +55,28 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
 
   const getAlertIcon = (type: string, severity: string) => {
     const iconClass = severity === 'critical' ? 'text-destructive' :
-                     severity === 'high' ? 'text-warning' :
-                     severity === 'medium' ? 'text-accent' : 'text-muted-foreground';
+                     severity === 'high' ? 'text-destructive' :
+                     severity === 'medium' ? 'text-warning' : 'text-muted-foreground';
 
     switch (type) {
       case 'overspeed':
-        return <Zap className={`h-4 w-4 ${iconClass}`} />;
+        return <AlertTriangle className={`h-4 w-4 ${iconClass}`} />;
+      case 'geofence':
+        return <MapPin className={`h-4 w-4 ${iconClass}`} />;
+      case 'sos':
+        return <Shield className={`h-4 w-4 ${iconClass}`} />;
       case 'fuel':
         return <Fuel className={`h-4 w-4 ${iconClass}`} />;
       case 'network':
         return <Wifi className={`h-4 w-4 ${iconClass}`} />;
       case 'weather':
         return <Cloud className={`h-4 w-4 ${iconClass}`} />;
-      case 'geofence':
-        return <Navigation className={`h-4 w-4 ${iconClass}`} />;
-      case 'sos':
-        return <AlertTriangle className={`h-4 w-4 ${iconClass}`} />;
+      case 'traffic':
+        return <Car className={`h-4 w-4 ${iconClass}`} />;
+      case 'battery':
+        return <Battery className={`h-4 w-4 ${iconClass}`} />;
+      case 'maintenance':
+        return <Settings className={`h-4 w-4 ${iconClass}`} />;
       default:
         return <AlertCircle className={`h-4 w-4 ${iconClass}`} />;
     }
@@ -99,7 +111,7 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
   const unacknowledgedCount = alerts.filter(a => !a.acknowledged).length;
   const criticalCount = alerts.filter(a => a.severity === 'critical' && !a.acknowledged).length;
 
-  const alertTypes = ['overspeed', 'fuel', 'network', 'weather', 'geofence', 'sos', 'battery'];
+  const alertTypes = ['overspeed', 'fuel', 'network', 'weather', 'geofence', 'sos', 'battery', 'maintenance', 'traffic'];
   const severityLevels = ['low', 'medium', 'high', 'critical'];
 
   return (
@@ -166,7 +178,8 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
               }))}
               className="h-6 px-2 text-xs"
             >
-              Unack.
+              <Circle className="h-3 w-3 mr-1" />
+              Unread ({alerts.filter(a => !a.acknowledged).length})
             </Button>
             <Button
               variant={filter.severity.includes('critical') ? 'default' : 'outline'}
@@ -179,7 +192,8 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
               }))}
               className="h-6 px-2 text-xs"
             >
-              Critical
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              Critical ({alerts.filter(a => a.severity === 'critical').length})
             </Button>
             <Button
               variant={filter.type.includes('overspeed') ? 'default' : 'outline'}
@@ -192,7 +206,50 @@ const AlertsPanel: React.FC<AlertsPanelProps> = ({
               }))}
               className="h-6 px-2 text-xs"
             >
-              Speed
+              <Zap className="h-3 w-3 mr-1" />
+              Speed ({alerts.filter(a => a.type === 'overspeed').length})
+            </Button>
+            <Button
+              variant={filter.type.includes('fuel') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter(prev => ({
+                ...prev,
+                type: prev.type.includes('fuel')
+                  ? prev.type.filter(t => t !== 'fuel')
+                  : [...prev.type, 'fuel']
+              }))}
+              className="h-6 px-2 text-xs"
+            >
+              <Fuel className="h-3 w-3 mr-1" />
+              Fuel ({alerts.filter(a => a.type === 'fuel').length})
+            </Button>
+            <Button
+              variant={filter.type.includes('battery') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter(prev => ({
+                ...prev,
+                type: prev.type.includes('battery')
+                  ? prev.type.filter(t => t !== 'battery')
+                  : [...prev.type, 'battery']
+              }))}
+              className="h-6 px-2 text-xs"
+            >
+              <Battery className="h-3 w-3 mr-1" />
+              Battery ({alerts.filter(a => a.type === 'battery').length})
+            </Button>
+            <Button
+              variant={filter.type.includes('network') ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setFilter(prev => ({
+                ...prev,
+                type: prev.type.includes('network')
+                  ? prev.type.filter(t => t !== 'network')
+                  : [...prev.type, 'network']
+              }))}
+              className="h-6 px-2 text-xs"
+            >
+              <Wifi className="h-3 w-3 mr-1" />
+              Network ({alerts.filter(a => a.type === 'network').length})
             </Button>
           </div>
         </div>

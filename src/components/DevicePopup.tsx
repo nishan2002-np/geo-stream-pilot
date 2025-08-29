@@ -110,13 +110,19 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
 
   const importantAttributes = {
     'Ignition': position.attributes?.ignition ? '🟢 ON' : '🔴 OFF',
-    'Fuel': `${fuelPercentage}% (${actualFuelLiters}L)`,
+    'Fuel Level': `${fuelPercentage}% (${actualFuelLiters}L)`,
     'Range': `${rangeKm} km remaining`,
-    'Battery': `${position.attributes?.battery || 0}%`,
+    'Battery': `🔋 ${position.attributes?.battery || 0}%`,
     [`${signalInfo.type} Signal`]: `${signalInfo.icon} ${signalInfo.strength}%`,
     'Satellites': `🛰️ ${position.attributes?.satellites || 0}`,
-    'Temperature': position.attributes?.temp1 ? `🌡️ ${position.attributes.temp1}°C` : 'N/A',
+    'Temperature 1': position.attributes?.temp1 ? `🌡️ ${Math.round(position.attributes.temp1)}°C` : 'N/A',
+    'Temperature 2': position.attributes?.temp2 ? `🌡️ ${Math.round(position.attributes.temp2)}°C` : 'N/A',
+    'Voltage': position.attributes?.voltage ? `⚡ ${position.attributes.voltage}V` : 'N/A',
+    'Engine Hours': position.attributes?.engineHours ? `⏱️ ${position.attributes.engineHours}h` : 'N/A',
+    'Odometer': position.attributes?.odometer ? `📏 ${position.attributes.odometer.toLocaleString()}km` : 'N/A',
+    'Driver': position.attributes?.driverName || 'Unknown',
     'Protocol': position.protocol?.toUpperCase() || 'Unknown',
+    'Phone Call': position.attributes?.phoneCall ? '📞 Active' : '📵 None',
   };
 
   return (
@@ -257,14 +263,17 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
             </div>
           )}
 
-          {/* Telemetry Grid */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {Object.entries(importantAttributes).map(([key, value]) => (
-              <div key={key} className="flex justify-between">
-                <span className="text-muted-foreground">{key}:</span>
-                <span className="font-medium">{value}</span>
-              </div>
-            ))}
+          {/* Telemetry Grid - Comprehensive Device Information */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-semibold text-foreground">Device Telemetry</h4>
+            <div className="grid grid-cols-2 gap-2 text-xs">
+              {Object.entries(importantAttributes).map(([key, value]) => (
+                <div key={key} className="flex justify-between p-2 bg-muted/20 rounded">
+                  <span className="text-muted-foreground font-medium">{key}:</span>
+                  <span className="font-semibold text-right">{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Attributes Toggle */}
