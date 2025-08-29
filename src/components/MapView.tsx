@@ -99,36 +99,54 @@ const MapView: React.FC<MapViewProps> = ({
     }).addTo(mapRef.current);
   }, [mapStyle]);
 
-  // Create device markers
+  // Create and update device markers with smooth animation
   useEffect(() => {
     if (!mapRef.current) return;
 
-    // Clear existing markers
-    markersRef.current.forEach(marker => {
-      mapRef.current!.removeLayer(marker);
-    });
-    markersRef.current.clear();
-
-    // Add device markers
+    // Update or create markers
     devices.forEach(device => {
       const position = positions.find(p => p.deviceId === device.id);
       if (!position) return;
 
+      const existingMarker = markersRef.current.get(device.id);
       const icon = createDeviceIcon(device, position);
-      const marker = L.marker([position.latitude, position.longitude], { icon })
-        .addTo(mapRef.current!);
+      
+      if (existingMarker) {
+        // Smooth position update
+        const currentLatLng = existingMarker.getLatLng();
+        const newLatLng = L.latLng(position.latitude, position.longitude);
+        
+        // Only update if position changed significantly
+        if (currentLatLng.distanceTo(newLatLng) > 1) {
+          // Animate marker to new position
+          existingMarker.setLatLng(newLatLng);
+          existingMarker.setIcon(icon);
+        }
+      } else {
+        // Create new marker
+        const marker = L.marker([position.latitude, position.longitude], { icon })
+          .addTo(mapRef.current!);
 
-      // Add click handler
-      marker.on('click', () => {
-        onDeviceSelect(device.id);
-        setPopupDevice({ device, position });
-      });
+        // Add click handler
+        marker.on('click', () => {
+          onDeviceSelect(device.id);
+          setPopupDevice({ device, position });
+        });
 
-      markersRef.current.set(device.id, marker);
+        markersRef.current.set(device.id, marker);
+      }
     });
 
-    // Fit bounds if devices exist
-    if (devices.length > 0 && positions.length > 0) {
+    // Remove markers for devices no longer present
+    markersRef.current.forEach((marker, deviceId) => {
+      if (!devices.find(d => d.id === deviceId)) {
+        mapRef.current!.removeLayer(marker);
+        markersRef.current.delete(deviceId);
+      }
+    });
+
+    // Fit bounds only on initial load
+    if (devices.length > 0 && positions.length > 0 && markersRef.current.size === devices.length) {
       const bounds = L.latLngBounds(
         positions.map(p => [p.latitude, p.longitude])
       );
@@ -177,24 +195,34 @@ const MapView: React.FC<MapViewProps> = ({
 
   const createDeviceIcon = (device: Device, position: Position) => {
     const statusColor = getStatusColor(device.status);
-    const iconSize = selectedDeviceId === device.id ? 32 : 24;
+    const iconSize = selectedDeviceId === device.id ? 36 : 28;
+    const isOverspeed = position.speed > 20;
     
     return L.divIcon({
       className: 'custom-marker',
       html: `
-        <div class="relative">
-          <div class="w-${iconSize/4} h-${iconSize/4} rounded-full border-2 border-white shadow-lg transform transition-all duration-300 ${
+        <div class="relative transition-all duration-500 ease-in-out">
+          <div class="rounded-full border-2 border-white shadow-lg transition-all duration-300 ${
             selectedDeviceId === device.id ? 'scale-125' : ''
-          }" style="background-color: ${statusColor};">
-            ${getDeviceIcon(device.category || 'car')}
+          } ${isOverspeed ? 'animate-pulse-danger' : ''}" 
+          style="width: ${iconSize}px; height: ${iconSize}px; background-color: ${statusColor}; display: flex; align-items: center; justify-content: center;">
+            <span style="font-size: ${iconSize/2.5}px; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5));">
+              ${getDeviceIcon(device.category || 'car')}
+            </span>
           </div>
           ${device.status === 'moving' ? `
-            <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse-gps"></div>
+            <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse"></div>
           ` : ''}
+          ${isOverspeed ? `
+            <div class="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-red-500 animate-ping"></div>
+          ` : ''}
+          <div class="absolute -bottom-6 left-1/2 transform -translate-x-1/2 text-xs font-bold text-white bg-black/70 px-1 rounded" style="text-shadow: 1px 1px 1px rgba(0,0,0,0.8);">
+            ${Math.round(position.speed)}
+          </div>
         </div>
       `,
-      iconSize: [iconSize, iconSize],
-      iconAnchor: [iconSize/2, iconSize/2],
+      iconSize: [iconSize + 20, iconSize + 20],
+      iconAnchor: [(iconSize + 20)/2, (iconSize + 20)/2],
     });
   };
 

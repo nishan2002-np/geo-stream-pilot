@@ -12,6 +12,7 @@ import {
   Fuel,
   Battery,
   Signal,
+  Satellite,
   Thermometer,
   Camera,
   Play,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Device, Position } from '@/types/tracking';
 import { resolveMediaUrl, getMockSnapshotUrl } from '@/utils/media';
+import { getNetworkInfo } from '@/utils/geocoding';
 import dayjs from 'dayjs';
 
 interface DevicePopupProps {
@@ -41,13 +43,27 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   const mediaInfo = resolveMediaUrl(position.attributes, position.id);
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
-  // Get fuel level with color coding
-  const fuelLevel = parseInt(position.attributes?.fuel || '0');
+  // Get real values from server attributes
+  const fuelLevel = parseInt(position.attributes?.fuel || position.attributes?.adc1 * 100 || '0');
+  const batteryLevel = parseInt(position.attributes?.battery || position.attributes?.power || '0');
+  const gsmSignal = parseInt(position.attributes?.gsm || position.attributes?.rssi || '0');
+  const satellites = parseInt(position.attributes?.satellites || position.attributes?.sat || '0');
+  const isOverspeed = position.speed > 20;
+  
   const getFuelColor = (level: number) => {
     if (level > 60) return 'text-fuel-high';
     if (level > 30) return 'text-fuel-medium';
     return 'text-fuel-low';
   };
+
+  const getSignalStrength = (signal: number) => {
+    if (signal > 80) return { color: 'text-green-500', bars: 4, text: 'Excellent' };
+    if (signal > 60) return { color: 'text-yellow-500', bars: 3, text: 'Good' };
+    if (signal > 40) return { color: 'text-orange-500', bars: 2, text: 'Fair' };
+    return { color: 'text-red-500', bars: 1, text: 'Poor' };
+  };
+
+  const signalInfo = getSignalStrength(gsmSignal);
 
   // Format attributes for display
   const formatAttributeValue = (key: string, value: any) => {
@@ -64,12 +80,14 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   };
 
   const importantAttributes = {
-    'Ignition': position.attributes?.ignition,
+    'Protocol': position.protocol,
+    'Ignition': position.attributes?.ignition ? '✓ ON' : '✗ OFF',
     'Fuel': `${fuelLevel}%`,
-    'Battery': `${position.attributes?.battery || 0}%`,
-    'GSM Signal': `${position.attributes?.gsm || 0}%`,
-    'Satellites': position.attributes?.satellites || 0,
+    'Battery': `${batteryLevel}%`,
+    'GSM Signal': `${gsmSignal}% (${signalInfo.text})`,
+    'Satellites': `${satellites} sats`,
     'Temperature': position.attributes?.temp1 ? `${position.attributes.temp1}°C` : 'N/A',
+    'Network': position.network ? getNetworkInfo(position.network) : 'N/A',
   };
 
   return (
@@ -87,18 +105,23 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
               <CardTitle className="text-lg">{device.name}</CardTitle>
               <p className="text-sm text-muted-foreground">{device.uniqueId}</p>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className={
-                  device.status === 'moving' ? 'badge-moving' :
-                  device.status === 'idle' ? 'badge-idle' :
-                  device.status === 'offline' ? 'badge-offline' :
-                  'badge-online'
-                }
-              >
-                {device.status}
+          <div className="flex items-center gap-2">
+            <Badge
+              variant="outline"
+              className={
+                device.status === 'moving' ? 'badge-moving' :
+                device.status === 'idle' ? 'badge-idle' :
+                device.status === 'offline' ? 'badge-offline' :
+                'badge-online'
+              }
+            >
+              {device.status}
+            </Badge>
+            {isOverspeed && (
+              <Badge variant="destructive" className="animate-pulse">
+                OVERSPEED!
               </Badge>
+            )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -121,18 +144,38 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
               </span>
             </div>
             {position.address && (
-              <p className="text-sm text-muted-foreground pl-6">
-                {position.address}
-              </p>
+              <div className="pl-6 space-y-1">
+                <p className="text-sm text-muted-foreground">
+                  {position.address}
+                </p>
+                {position.attributes?.landmark && (
+                  <p className="text-xs text-blue-500 font-medium">
+                    📍 {position.attributes.landmark}
+                  </p>
+                )}
+              </div>
             )}
             <div className="flex items-center gap-4 text-sm">
               <div className="flex items-center gap-1">
-                <Navigation className="h-4 w-4 text-muted-foreground" />
-                <span>{Math.round(position.speed)} km/h</span>
+                <Navigation className={`h-4 w-4 ${isOverspeed ? 'text-red-500' : 'text-muted-foreground'}`} />
+                <span className={isOverspeed ? 'text-red-500 font-bold' : ''}>{Math.round(position.speed)} km/h</span>
+                {isOverspeed && <span className="text-red-500 text-xs">⚠️</span>}
               </div>
               <div className="flex items-center gap-1">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <span>{dayjs(position.deviceTime).format('HH:mm:ss')}</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <Signal className={`h-4 w-4 ${signalInfo.color}`} />
+                <div className="flex">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`w-1 h-3 mr-0.5 ${i < signalInfo.bars ? signalInfo.color.replace('text-', 'bg-') : 'bg-gray-300'}`}
+                      style={{ height: `${(i + 1) * 3}px` }}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </div>
@@ -154,11 +197,11 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
                 <span className="text-sm font-medium">Battery</span>
               </div>
               <Progress
-                value={parseInt(position.attributes?.battery || '0')}
+                value={batteryLevel}
                 className="h-2"
               />
               <span className="text-xs text-muted-foreground">
-                {position.attributes?.battery || 0}%
+                {batteryLevel}%
               </span>
             </div>
           </div>
@@ -206,14 +249,21 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
             </div>
           )}
 
-          {/* Telemetry Grid */}
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            {Object.entries(importantAttributes).map(([key, value]) => (
-              <div key={key} className="flex justify-between">
-                <span className="text-muted-foreground">{key}:</span>
-                <span className="font-medium">{value}</span>
-              </div>
-            ))}
+          {/* Real-time Telemetry Grid */}
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Real-time Data</h4>
+            <div className="grid grid-cols-1 gap-2 text-xs">
+              {Object.entries(importantAttributes).map(([key, value]) => (
+                <div key={key} className="flex justify-between items-center p-2 bg-muted/20 rounded">
+                  <span className="text-muted-foreground">{key}:</span>
+                  <span className={`font-medium ${
+                    key === 'Fuel' && fuelLevel < 20 ? 'text-red-500' :
+                    key === 'GSM Signal' && gsmSignal < 40 ? 'text-orange-500' :
+                    key === 'Satellites' && satellites < 4 ? 'text-yellow-500' : ''
+                  }`}>{value}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           {/* Attributes Toggle */}
