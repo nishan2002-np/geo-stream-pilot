@@ -4,7 +4,6 @@ import MapView from '@/components/MapView';
 import DeviceList from '@/components/DeviceList';
 import AlertsPanel from '@/components/AlertsPanel';
 import TelemetryPanel from '@/components/TelemetryPanel';
-import OverspeedAlert from '@/components/OverspeedAlert';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -216,16 +215,6 @@ const Dashboard = () => {
           />
         </motion.aside>
       </div>
-
-      {/* Overspeed Alert Overlay */}
-      <OverspeedAlert
-        devices={devices}
-        positions={positions}
-        speedLimit={20}
-        onAcknowledge={(deviceId) => {
-          console.log(`Acknowledged overspeed for device ${deviceId}`);
-        }}
-      />
 
       {/* Bottom Panel - Telemetry */}
       {selectedDevice && selectedPosition && (
