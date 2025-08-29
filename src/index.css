@@ -8,91 +8,82 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* GPS Tracking Theme - Professional Dark */
+    --background: 220 25% 8%;
+    --foreground: 210 15% 95%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 220 20% 10%;
+    --card-foreground: 210 15% 95%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 220 25% 8%;
+    --popover-foreground: 210 15% 95%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    --primary: 207 100% 65%;
+    --primary-foreground: 220 25% 8%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 220 15% 15%;
+    --secondary-foreground: 210 15% 95%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 220 12% 20%;
+    --muted-foreground: 210 8% 60%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 134 100% 65%;
+    --accent-foreground: 220 25% 8%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 85% 60%;
+    --destructive-foreground: 210 15% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --warning: 45 100% 65%;
+    --warning-foreground: 220 25% 8%;
 
-    --radius: 0.5rem;
+    --success: 134 100% 50%;
+    --success-foreground: 220 25% 8%;
 
-    --sidebar-background: 0 0% 98%;
+    --border: 220 12% 25%;
+    --input: 220 12% 15%;
+    --ring: 207 100% 65%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    --radius: 0.75rem;
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* GPS-specific colors */
+    --gps-online: 134 100% 65%;
+    --gps-offline: 0 85% 60%;
+    --gps-idle: 45 100% 65%;
+    --gps-moving: 207 100% 65%;
+    
+    /* Map & tracking colors */
+    --trail-color: 207 100% 65%;
+    --marker-selected: 134 100% 65%;
+    --geofence: 275 100% 65%;
+    
+    /* Status indicators */
+    --fuel-high: 134 100% 50%;
+    --fuel-medium: 45 100% 65%;
+    --fuel-low: 0 85% 60%;
+    
+    /* Glass effect for panels */
+    --glass-bg: 220 25% 8% / 0.8;
+    --glass-border: 210 15% 95% / 0.1;
+    --glass-backdrop: blur(20px);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 220 20% 10%;
+    --sidebar-foreground: 210 15% 95%;
+    --sidebar-primary: 207 100% 65%;
+    --sidebar-primary-foreground: 220 25% 8%;
+    --sidebar-accent: 220 15% 15%;
+    --sidebar-accent-foreground: 210 15% 95%;
+    --sidebar-border: 220 12% 25%;
+    --sidebar-ring: 207 100% 65%;
   }
 }
+
+/* Import Leaflet CSS */
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+
+/* Video.js imports */
+@import 'video.js/dist/video-js.css';
 
 @layer base {
   * {
@@ -100,6 +91,159 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-medium;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+
+  /* Glass morphism utility */
+  .glass {
+    background: hsl(var(--glass-bg));
+    border: 1px solid hsl(var(--glass-border));
+    backdrop-filter: var(--glass-backdrop);
+    -webkit-backdrop-filter: var(--glass-backdrop);
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted)) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted));
+    border-radius: 3px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground));
+  }
+
+  /* Leaflet map styling */
+  .leaflet-container {
+    background: hsl(var(--background));
+    font-family: inherit;
+  }
+
+  .leaflet-popup-content-wrapper {
+    background: hsl(var(--card));
+    color: hsl(var(--card-foreground));
+    border-radius: var(--radius);
+    box-shadow: 0 10px 25px -5px hsl(var(--background) / 0.3);
+  }
+
+  .leaflet-popup-tip {
+    background: hsl(var(--card));
+  }
+
+  /* Status indicators */
+  .status-online {
+    color: hsl(var(--gps-online));
+  }
+  
+  .status-offline {
+    color: hsl(var(--gps-offline));
+  }
+  
+  .status-idle {
+    color: hsl(var(--gps-idle));
+  }
+  
+  .status-moving {
+    color: hsl(var(--gps-moving));
+  }
+}
+
+@layer components {
+  /* GPS Panel variants */
+  .panel-glass {
+    @apply glass rounded-xl shadow-xl;
+  }
+
+  .panel-sidebar {
+    @apply bg-sidebar border-sidebar-border;
+  }
+
+  /* Map controls */
+  .map-control {
+    @apply glass rounded-lg p-2 shadow-lg hover:bg-muted/20 transition-all;
+  }
+
+  /* Device status badges */
+  .badge-online {
+    @apply bg-gps-online/10 text-gps-online border-gps-online/20;
+  }
+
+  .badge-offline {
+    @apply bg-gps-offline/10 text-gps-offline border-gps-offline/20;
+  }
+
+  .badge-idle {
+    @apply bg-gps-idle/10 text-gps-idle border-gps-idle/20;
+  }
+
+  .badge-moving {
+    @apply bg-gps-moving/10 text-gps-moving border-gps-moving/20;
+  }
+}
+
+@layer utilities {
+  /* Animations for GPS tracking */
+  @keyframes pulse-gps {
+    0%, 100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: scale(1.05);
+      opacity: 0.8;
+    }
+  }
+
+  @keyframes move-marker {
+    from {
+      transform: translateX(var(--move-from-x, 0)) translateY(var(--move-from-y, 0));
+    }
+    to {
+      transform: translateX(var(--move-to-x, 0)) translateY(var(--move-to-y, 0));
+    }
+  }
+
+  @keyframes rotate-bearing {
+    from {
+      transform: rotate(var(--rotate-from, 0deg));
+    }
+    to {
+      transform: rotate(var(--rotate-to, 0deg));
+    }
+  }
+
+  .animate-pulse-gps {
+    animation: pulse-gps 2s infinite;
+  }
+
+  .animate-move-marker {
+    animation: move-marker 1s ease-out;
+  }
+
+  .animate-rotate-bearing {
+    animation: rotate-bearing 0.5s ease-out;
+  }
+
+  /* Utility for fuel indicators */
+  .fuel-gradient {
+    background: linear-gradient(
+      90deg,
+      hsl(var(--fuel-low)) 0%,
+      hsl(var(--fuel-medium)) 50%,
+      hsl(var(--fuel-high)) 100%
+    );
   }
 }

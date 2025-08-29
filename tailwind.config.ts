@@ -52,6 +52,25 @@ export default {
 					DEFAULT: 'hsl(var(--card))',
 					foreground: 'hsl(var(--card-foreground))'
 				},
+				warning: {
+					DEFAULT: 'hsl(var(--warning))',
+					foreground: 'hsl(var(--warning-foreground))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))',
+					foreground: 'hsl(var(--success-foreground))'
+				},
+				// GPS-specific colors
+				'gps-online': 'hsl(var(--gps-online))',
+				'gps-offline': 'hsl(var(--gps-offline))',
+				'gps-idle': 'hsl(var(--gps-idle))',
+				'gps-moving': 'hsl(var(--gps-moving))',
+				'trail-color': 'hsl(var(--trail-color))',
+				'marker-selected': 'hsl(var(--marker-selected))',
+				'geofence': 'hsl(var(--geofence))',
+				'fuel-high': 'hsl(var(--fuel-high))',
+				'fuel-medium': 'hsl(var(--fuel-medium))',
+				'fuel-low': 'hsl(var(--fuel-low))',
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
