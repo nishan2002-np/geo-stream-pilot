@@ -1,3 +1,9 @@
+/* Import external CSS first */
+@import 'leaflet/dist/leaflet.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.css';
+@import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
+@import 'video.js/dist/video-js.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -77,13 +83,6 @@ All colors MUST be HSL.
   }
 }
 
-/* Import Leaflet CSS */
-@import 'leaflet/dist/leaflet.css';
-@import 'leaflet.markercluster/dist/MarkerCluster.css';
-@import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
-
-/* Video.js imports */
-@import 'video.js/dist/video-js.css';
 
 @layer base {
   * {

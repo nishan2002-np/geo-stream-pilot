@@ -1,6 +1,6 @@
 import traccarApi from './traccarApi';
 
-const TRACCAR_URL = process.env.REACT_APP_TRACCAR_URL || 'https://system.geotrack.com.np/api';
+const TRACCAR_URL = import.meta.env.VITE_TRACCAR_URL || 'https://system.geotrack.com.np/api';
 
 export interface MediaInfo {
   type: 'image' | 'video' | 'snapshot' | 'hls' | 'rtsp' | 'unknown';
