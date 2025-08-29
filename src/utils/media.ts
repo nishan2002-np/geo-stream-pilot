@@ -1,5 +1,6 @@
 import traccarApi from './traccarApi';
 
+// GPS Tracking Media Utils - Fixed for Vite
 const TRACCAR_URL = import.meta.env.VITE_TRACCAR_URL || 'https://system.geotrack.com.np/api';
 
 export interface MediaInfo {
