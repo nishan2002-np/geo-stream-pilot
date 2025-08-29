@@ -14,7 +14,7 @@ import {
   Volume2,
   VolumeX
 } from 'lucide-react';
-import { Device, Position } from '@/types/tracking';
+import { Device, Position, Alert as AlertType } from '@/types/tracking';
 
 interface MeitrackEvent {
   id: string;
@@ -33,10 +33,12 @@ interface MeitrackEventAlertProps {
   devices: Device[];
   positions: Position[];
   onAcknowledge: (eventId: string) => void;
+  onEventGenerated: (alert: AlertType) => void; // Add callback to send alerts to main alerts system
 }
 
-// Meitrack event code mappings
+// Complete Meitrack event code mappings
 const MEITRACK_EVENTS: Record<number, { name: string; severity: 'low' | 'medium' | 'high' | 'critical'; icon: any }> = {
+  // Basic events
   35: { name: 'Overspeed Alert', severity: 'high', icon: AlertTriangle },
   36: { name: 'Geofence Exit', severity: 'medium', icon: Navigation },
   37: { name: 'Geofence Entry', severity: 'low', icon: Navigation },
@@ -48,243 +50,243 @@ const MEITRACK_EVENTS: Record<number, { name: string; severity: 'low' | 'medium'
   43: { name: 'Harsh Braking', severity: 'medium', icon: AlertTriangle },
   44: { name: 'Harsh Acceleration', severity: 'medium', icon: AlertTriangle },
   45: { name: 'Harsh Cornering', severity: 'medium', icon: AlertTriangle },
+  
+  // Extended Meitrack events
+  46: { name: 'Panic Button', severity: 'critical', icon: Shield },
+  47: { name: 'Remove Alert', severity: 'high', icon: AlertTriangle },
+  48: { name: 'Low Battery', severity: 'medium', icon: Zap },
+  49: { name: 'Vibration Alert', severity: 'medium', icon: AlertTriangle },
+  50: { name: 'Maintenance Alert', severity: 'low', icon: Clock },
+  51: { name: 'Towing Alert', severity: 'high', icon: AlertTriangle },
+  52: { name: 'Door Open', severity: 'low', icon: Navigation },
+  53: { name: 'Door Close', severity: 'low', icon: Navigation },
+  54: { name: 'AC On', severity: 'low', icon: Zap },
+  55: { name: 'AC Off', severity: 'low', icon: Zap },
+  56: { name: 'Temperature Alert', severity: 'medium', icon: AlertTriangle },
+  57: { name: 'Fuel Theft', severity: 'high', icon: Fuel },
+  58: { name: 'Fuel Fill', severity: 'low', icon: Fuel },
+  59: { name: 'GPS Lost', severity: 'medium', icon: Navigation },
+  60: { name: 'GPS Recovered', severity: 'low', icon: Navigation },
+  61: { name: 'Driver Card Inserted', severity: 'low', icon: Shield },
+  62: { name: 'Driver Card Removed', severity: 'low', icon: Shield },
+  63: { name: 'Phone Call Start', severity: 'low', icon: Clock },
+  64: { name: 'Phone Call End', severity: 'low', icon: Clock },
+  65: { name: 'RFID Card', severity: 'low', icon: Shield },
 };
 
 const MeitrackEventAlert: React.FC<MeitrackEventAlertProps> = ({
   devices,
   positions,
   onAcknowledge,
+  onEventGenerated,
 }) => {
   const [events, setEvents] = useState<MeitrackEvent[]>([]);
-  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [lastPositionIds, setLastPositionIds] = useState<Map<number, number>>(new Map());
+  const [eventCooldowns, setEventCooldowns] = useState<Map<string, number>>(new Map());
 
-  // Monitor positions for Meitrack events
+  // Monitor positions for Meitrack events - only trigger on position changes
   useEffect(() => {
     const checkForEvents = () => {
       const newEvents: MeitrackEvent[] = [];
+      const currentTime = Date.now();
 
       positions.forEach(position => {
         const device = devices.find(d => d.id === position.deviceId);
         if (!device || position.protocol?.toLowerCase() !== 'meitrack') return;
 
-        // Check for various event conditions
+        // Only process events if position actually changed
+        const lastPositionId = lastPositionIds.get(device.id);
+        if (lastPositionId === position.id) return; // No position change
+
+        // Update last position ID
+        setLastPositionIds(prev => new Map(prev).set(device.id, position.id));
+
         const attributes = position.attributes || {};
 
-        // Overspeed event (code 35)
-        if (position.speed > 80) { // 80 km/h speed limit
-          newEvents.push({
-            id: `${device.id}-overspeed-${Date.now()}`,
+        // Check cooldown for this device
+        const cooldownKey = `${device.id}`;
+        const lastEventTime = eventCooldowns.get(cooldownKey);
+        if (lastEventTime && currentTime - lastEventTime < 30000) return; // 30 second cooldown
+
+        // Real Meitrack event from attributes
+        if (attributes.event && MEITRACK_EVENTS[attributes.event]) {
+          const eventCode = attributes.event;
+          const eventInfo = MEITRACK_EVENTS[eventCode];
+          
+          const meitrackEvent = {
+            id: `${device.id}-meitrack-${eventCode}-${currentTime}`,
             deviceId: device.id,
             deviceName: device.name,
-            eventCode: 35,
-            eventName: 'Overspeed Alert',
-            message: `Vehicle exceeding speed limit: ${Math.round(position.speed)} km/h`,
-            severity: 'high',
+            eventCode,
+            eventName: eventInfo.name,
+            message: `${eventInfo.name} - ${device.name} at ${position.address || 'Unknown location'}. Signal: ${attributes.gsm || 0}%, Speed: ${Math.round(position.speed)}km/h`,
+            severity: eventInfo.severity,
             timestamp: new Date().toISOString(),
             position,
             acknowledged: false,
-          });
-        }
+          };
 
-        // Low fuel event (code 39)
-        const fuelLevel = parseInt(attributes.fuel || '100');
-        if (fuelLevel < 20) {
-          newEvents.push({
-            id: `${device.id}-lowfuel-${Date.now()}`,
+          newEvents.push(meitrackEvent);
+
+          // Convert to Alert for main system
+          const alert: AlertType = {
+            id: meitrackEvent.id,
+            type: 'overspeed', // Map to closest type
             deviceId: device.id,
             deviceName: device.name,
-            eventCode: 39,
-            eventName: 'Low Fuel Warning',
-            message: `Low fuel level detected: ${fuelLevel}% remaining`,
-            severity: 'medium',
-            timestamp: new Date().toISOString(),
-            position,
+            severity: eventInfo.severity,
+            message: meitrackEvent.message,
+            timestamp: meitrackEvent.timestamp,
+            latitude: position.latitude,
+            longitude: position.longitude,
             acknowledged: false,
-          });
-        }
-
-        // Ignition events (codes 41, 42)
-        if (attributes.ignition !== undefined) {
-          const eventCode = attributes.ignition ? 41 : 42;
-          const eventName = attributes.ignition ? 'Ignition On' : 'Ignition Off';
-          
-          // Only create event if it's a recent change
-          const lastEventTime = localStorage.getItem(`last-ignition-${device.id}`);
-          const currentTime = Date.now();
-          
-          if (!lastEventTime || currentTime - parseInt(lastEventTime) > 60000) { // 1 minute cooldown
-            newEvents.push({
-              id: `${device.id}-ignition-${currentTime}`,
-              deviceId: device.id,
-              deviceName: device.name,
-              eventCode,
-              eventName,
-              message: `Vehicle ignition ${attributes.ignition ? 'turned on' : 'turned off'}`,
-              severity: 'low',
-              timestamp: new Date().toISOString(),
-              position,
-              acknowledged: false,
-            });
-            
-            localStorage.setItem(`last-ignition-${device.id}`, currentTime.toString());
-          }
-        }
-
-        // Check for custom event codes in attributes
-        Object.keys(attributes).forEach(key => {
-          if (key.startsWith('event') && MEITRACK_EVENTS[parseInt(attributes[key])]) {
-            const eventCode = parseInt(attributes[key]);
-            const eventInfo = MEITRACK_EVENTS[eventCode];
-            
-            newEvents.push({
-              id: `${device.id}-event${eventCode}-${Date.now()}`,
-              deviceId: device.id,
-              deviceName: device.name,
+            positionId: position.id,
+            attributes: {
               eventCode,
               eventName: eventInfo.name,
-              message: `${eventInfo.name} detected for ${device.name}`,
-              severity: eventInfo.severity,
-              timestamp: new Date().toISOString(),
-              position,
-              acknowledged: false,
-            });
-          }
-        });
+              protocol: 'meitrack',
+              ...attributes
+            }
+          };
+
+          onEventGenerated(alert);
+        }
+
+        // Overspeed event (code 35) - only if actually overspeeding
+        if (position.speed > 60) { // 60 km/h limit for Nepal roads
+          const eventCode = 35;
+          const meitrackEvent = {
+            id: `${device.id}-overspeed-${currentTime}`,
+            deviceId: device.id,
+            deviceName: device.name,
+            eventCode,
+            eventName: 'Overspeed Alert',
+            message: `Overspeed detected: ${Math.round(position.speed)} km/h at ${position.address || 'Unknown location'}`,
+            severity: 'high' as const,
+            timestamp: new Date().toISOString(),
+            position,
+            acknowledged: false,
+          };
+
+          newEvents.push(meitrackEvent);
+
+          const alert: AlertType = {
+            id: meitrackEvent.id,
+            type: 'overspeed',
+            deviceId: device.id,
+            deviceName: device.name,
+            severity: 'high',
+            message: meitrackEvent.message,
+            timestamp: meitrackEvent.timestamp,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            acknowledged: false,
+            positionId: position.id,
+            attributes: { eventCode: 35, protocol: 'meitrack' }
+          };
+
+          onEventGenerated(alert);
+        }
+
+        // Low fuel event (code 39) - but since all online devices should have 100% fuel, this is rare
+        const fuelLevel = parseInt(attributes.fuel || '100');
+        if (fuelLevel < 20) {
+          const eventCode = 39;
+          const meitrackEvent = {
+            id: `${device.id}-lowfuel-${currentTime}`,
+            deviceId: device.id,
+            deviceName: device.name,
+            eventCode,
+            eventName: 'Low Fuel Warning',
+            message: `Low fuel: ${fuelLevel}% remaining at ${position.address || 'Unknown location'}`,
+            severity: 'medium' as const,
+            timestamp: new Date().toISOString(),
+            position,
+            acknowledged: false,
+          };
+
+          newEvents.push(meitrackEvent);
+
+          const alert: AlertType = {
+            id: meitrackEvent.id,
+            type: 'fuel',
+            deviceId: device.id,
+            deviceName: device.name,
+            severity: 'medium',
+            message: meitrackEvent.message,
+            timestamp: meitrackEvent.timestamp,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            acknowledged: false,
+            positionId: position.id,
+            attributes: { eventCode: 39, protocol: 'meitrack' }
+          };
+
+          onEventGenerated(alert);
+        }
+
+        // Phone call event (code 63/64)
+        if (attributes.phoneCall) {
+          const eventCode = 63;
+          const meitrackEvent = {
+            id: `${device.id}-phonecall-${currentTime}`,
+            deviceId: device.id,
+            deviceName: device.name,
+            eventCode,
+            eventName: 'Phone Call Active',
+            message: `Driver on phone call at ${position.address || 'Unknown location'}`,
+            severity: 'low' as const,
+            timestamp: new Date().toISOString(),
+            position,
+            acknowledged: false,
+          };
+
+          newEvents.push(meitrackEvent);
+
+          const alert: AlertType = {
+            id: meitrackEvent.id,
+            type: 'network',
+            deviceId: device.id,
+            deviceName: device.name,
+            severity: 'low',
+            message: meitrackEvent.message,
+            timestamp: meitrackEvent.timestamp,
+            latitude: position.latitude,
+            longitude: position.longitude,
+            acknowledged: false,
+            positionId: position.id,
+            attributes: { eventCode: 63, protocol: 'meitrack' }
+          };
+
+          onEventGenerated(alert);
+        }
+
+        // Update cooldown
+        if (newEvents.length > 0) {
+          setEventCooldowns(prev => new Map(prev).set(cooldownKey, currentTime));
+        }
       });
 
-      // Add new events and play sound
+      // Add new events 
       if (newEvents.length > 0) {
         setEvents(prev => {
           const existingIds = new Set(prev.map(e => e.id));
           const uniqueNewEvents = newEvents.filter(e => !existingIds.has(e.id));
-          
-          if (uniqueNewEvents.length > 0 && soundEnabled) {
-            playAlertSound();
-          }
-          
           return [...prev, ...uniqueNewEvents];
         });
       }
     };
 
     checkForEvents();
-    const interval = setInterval(checkForEvents, 5000); // Check every 5 seconds
+    const interval = setInterval(checkForEvents, 10000); // Check every 10 seconds
 
     return () => clearInterval(interval);
-  }, [devices, positions, soundEnabled]);
-
-  const playAlertSound = () => {
-    try {
-      const audio = new Audio('data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt2Yo9CRxivO3SgSoFKIPP8NuTQQwXZrmPrJBhNjVgodDbq2EcBj+a2/LDecUFLIHO8tiJOAgZaLvt2Yo9CRxivO3SgSoFKIPP8NuTQQwXZrmPrJBhNjVgodDbq2EcBj+a2/LDecUFLIHO8tiJOAgZaLvt2Yo9CRxivO3SgSoFKIPP8NuTQQwXZrmPrJBhNjVgodDbq2EcBj+a2/LDecUFLIHO8tiJOAgZaLvt2Yo9CRxivO3SgSoFKIPP8NuTQQwXZrmPrJBhNjVgodDbq2EcBj+a2/LDecUFLIHO8tiJOAgZaLvt2Yo9CRxivO3SgSoFKIPP8NuTQQwXZrk=');
-      audio.volume = 0.3;
-      audio.play().catch(console.error);
-    } catch (error) {
-      console.error('Failed to play alert sound:', error);
-    }
-  };
-
-  const getSeverityColor = (severity: 'low' | 'medium' | 'high' | 'critical'): "default" | "destructive" => {
-    switch (severity) {
-      case 'critical': return 'destructive';
-      case 'high': return 'destructive';
-      case 'medium': return 'default';
-      case 'low': return 'default';
-    }
-  };
-
-  const getEventIcon = (eventCode: number) => {
-    const eventInfo = MEITRACK_EVENTS[eventCode];
-    if (eventInfo?.icon) {
-      const IconComponent = eventInfo.icon;
-      return <IconComponent className="h-4 w-4" />;
-    }
-    return <AlertTriangle className="h-4 w-4" />;
-  };
-
-  const handleAcknowledge = (eventId: string) => {
-    setEvents(prev => prev.map(event => 
-      event.id === eventId 
-        ? { ...event, acknowledged: true }
-        : event
-    ));
-    onAcknowledge(eventId);
-  };
+  }, [devices, positions, onEventGenerated, lastPositionIds, eventCooldowns]);
 
   const unacknowledgedEvents = events.filter(e => !e.acknowledged);
 
-  if (unacknowledgedEvents.length === 0) return null;
-
-  return (
-    <div className="fixed top-20 right-4 z-50 space-y-2 max-w-sm">
-      <div className="flex items-center justify-between mb-2">
-        <Badge variant="destructive" className="animate-pulse">
-          {unacknowledgedEvents.length} New Events
-        </Badge>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => setSoundEnabled(!soundEnabled)}
-          className="h-6 w-6 p-0"
-        >
-          {soundEnabled ? <Volume2 className="h-3 w-3" /> : <VolumeX className="h-3 w-3" />}
-        </Button>
-      </div>
-
-      <AnimatePresence>
-        {unacknowledgedEvents.slice(0, 5).map((event) => (
-          <motion.div
-            key={event.id}
-            initial={{ opacity: 0, x: 300, scale: 0.8 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: 300, scale: 0.8 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          >
-            <Alert variant={getSeverityColor(event.severity)} className="border-l-4 shadow-lg">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-2">
-                  {getEventIcon(event.eventCode)}
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Badge variant="outline" className="text-xs">
-                        Code {event.eventCode}
-                      </Badge>
-                      <Badge variant="secondary" className="text-xs">
-                        {event.severity.toUpperCase()}
-                      </Badge>
-                    </div>
-                    <AlertDescription className="text-sm">
-                      <div className="font-medium">{event.deviceName}</div>
-                      <div>{event.message}</div>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
-                        <Clock className="h-3 w-3" />
-                        {new Date(event.timestamp).toLocaleTimeString()}
-                      </div>
-                    </AlertDescription>
-                  </div>
-                </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleAcknowledge(event.id)}
-                  className="h-6 w-6 p-0 ml-2"
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </div>
-            </Alert>
-          </motion.div>
-        ))}
-      </AnimatePresence>
-
-      {unacknowledgedEvents.length > 5 && (
-        <div className="text-center">
-          <Badge variant="outline" className="text-xs">
-            +{unacknowledgedEvents.length - 5} more events
-          </Badge>
-        </div>
-      )}
-    </div>
-  );
+  // Don't render the popup anymore - all events go to main alerts panel
+  return null;
 };
 
 export default MeitrackEventAlert;

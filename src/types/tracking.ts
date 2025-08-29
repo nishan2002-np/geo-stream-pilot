@@ -2,7 +2,7 @@ export interface Device {
   id: number;
   name: string;
   uniqueId: string;
-  status: 'online' | 'offline' | 'idle' | 'moving' | 'unknown';
+  status: 'online' | 'offline' | 'stopped' | 'moving' | 'unknown';
   lastUpdate: string;
   positionId?: number;
   category?: string;
@@ -66,7 +66,7 @@ export interface MapState {
 }
 
 export interface FilterState {
-  status: ('online' | 'offline' | 'idle' | 'moving')[];
+  status: ('online' | 'offline' | 'stopped' | 'moving')[];
   protocols: string[];
   search: string;
   deviceTypes: string[];

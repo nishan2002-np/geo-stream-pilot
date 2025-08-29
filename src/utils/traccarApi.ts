@@ -10,7 +10,7 @@ export interface Device {
   id: number;
   name: string;
   uniqueId: string;
-  status: 'online' | 'offline' | 'idle' | 'moving' | 'unknown';
+  status: 'online' | 'offline' | 'stopped' | 'moving' | 'unknown';
   lastUpdate: string;
   positionId?: number;
   category?: string;
@@ -282,14 +282,34 @@ class TraccarAPI {
     }, 5000);
   }
 
+  // Get proper device status based on position data
+  private getDeviceStatus(deviceId: number, position?: Position): 'offline' | 'stopped' | 'moving' {
+    if (!position) return 'offline';
+    
+    const lastUpdate = new Date(position.serverTime);
+    const now = new Date();
+    const minutesSinceUpdate = (now.getTime() - lastUpdate.getTime()) / (1000 * 60);
+    
+    // Offline if no update for more than 10 minutes
+    if (minutesSinceUpdate > 10) return 'offline';
+    
+    // Moving if speed > 5 km/h and ignition on
+    if (position.speed > 5 && position.attributes?.ignition) return 'moving';
+    
+    // Otherwise stopped (includes ignition off)
+    return 'stopped';
+  }
+
   // Mock data generators
   private getMockDevices(): Device[] {
+    const mockPositions = this.getMockPositions();
+    
     return [
       {
         id: 1,
         name: 'Fleet Vehicle 001',
         uniqueId: 'FV001',
-        status: 'online',
+        status: this.getDeviceStatus(1, mockPositions.find(p => p.deviceId === 1)),
         lastUpdate: new Date().toISOString(),
         positionId: 1,
         category: 'car',
@@ -311,7 +331,7 @@ class TraccarAPI {
         id: 2,
         name: 'Delivery Truck 002',
         uniqueId: 'DT002',
-        status: 'idle',
+        status: this.getDeviceStatus(2, mockPositions.find(p => p.deviceId === 2)),
         lastUpdate: new Date(Date.now() - 300000).toISOString(),
         positionId: 2,
         category: 'truck',
@@ -333,7 +353,7 @@ class TraccarAPI {
         id: 3,
         name: 'Bus Route A',
         uniqueId: 'BRA001',
-        status: 'moving',
+        status: this.getDeviceStatus(3, mockPositions.find(p => p.deviceId === 3)),
         lastUpdate: new Date(Date.now() - 30000).toISOString(),
         positionId: 3,
         category: 'bus',

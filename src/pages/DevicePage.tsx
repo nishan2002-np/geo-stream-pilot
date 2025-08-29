@@ -192,7 +192,7 @@ const DevicePage = () => {
               variant="outline"
               className={
                 device.status === 'moving' ? 'badge-moving' :
-                device.status === 'idle' ? 'badge-idle' :
+                device.status === 'stopped' ? 'badge-idle' :
                 device.status === 'offline' ? 'badge-offline' :
                 'badge-online'
               }

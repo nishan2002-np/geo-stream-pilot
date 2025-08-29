@@ -101,10 +101,10 @@ const DeviceList: React.FC<DeviceListProps> = ({
           return a.name.localeCompare(b.name);
         case 'lastUpdate':
           return new Date(b.lastUpdate).getTime() - new Date(a.lastUpdate).getTime();
-        case 'status':
-          const statusOrder = { moving: 0, online: 1, idle: 2, offline: 3 };
-          return (statusOrder[a.status as keyof typeof statusOrder] || 4) - 
-                 (statusOrder[b.status as keyof typeof statusOrder] || 4);
+         case 'status':
+           const statusOrder = { moving: 0, stopped: 1, offline: 2 };
+           return (statusOrder[a.status as keyof typeof statusOrder] || 3) - 
+                  (statusOrder[b.status as keyof typeof statusOrder] || 3);
         default:
           return 0;
       }
@@ -128,10 +128,9 @@ const DeviceList: React.FC<DeviceListProps> = ({
 
   const getStatusBadgeClass = (status: string) => {
     switch (status) {
-      case 'online':
       case 'moving':
         return 'badge-moving';
-      case 'idle':
+      case 'stopped':
         return 'badge-idle';
       case 'offline':
         return 'badge-offline';
@@ -248,7 +247,7 @@ const DeviceList: React.FC<DeviceListProps> = ({
 
           {/* Status filters */}
           <div className="flex gap-1 text-xs">
-            {['moving', 'idle', 'offline'].map((status) => (
+            {['moving', 'stopped', 'offline'].map((status) => (
               <Button
                 key={status}
                 variant={statusFilter.includes(status) ? 'default' : 'outline'}

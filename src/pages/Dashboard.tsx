@@ -5,6 +5,7 @@ import DeviceList from '@/components/DeviceList';
 import AlertsPanel from '@/components/AlertsPanel';
 import TelemetryPanel from '@/components/TelemetryPanel';
 import MeitrackEventAlert from '@/components/MeitrackEventAlert';
+import { Alert } from '@/types/tracking';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import traccarApi from '@/utils/traccarApi';
-import { Device, Position, Alert } from '@/types/tracking';
+import { Device, Position } from '@/types/tracking';
 
 const Dashboard = () => {
   const [devices, setDevices] = useState<Device[]>([]);
@@ -179,9 +180,9 @@ const Dashboard = () => {
     ? positions.find(p => p.id === selectedDevice.positionId)
     : null;
 
-  const onlineDevices = devices.filter(d => d.status === 'online').length;
+  const onlineDevices = devices.filter(d => d.status !== 'offline').length;
   const movingDevices = devices.filter(d => d.status === 'moving').length;
-  const idleDevices = devices.filter(d => d.status === 'idle').length;
+  const stoppedDevices = devices.filter(d => d.status === 'stopped').length;
   const offlineDevices = devices.filter(d => d.status === 'offline').length;
 
   return (
@@ -211,7 +212,7 @@ const Dashboard = () => {
                 {movingDevices} Moving
               </Badge>
               <Badge variant="outline" className="badge-idle">
-                {idleDevices} Idle
+                {stoppedDevices} Stopped
               </Badge>
               <Badge variant="outline" className="badge-offline">
                 {offlineDevices} Offline
@@ -305,6 +306,7 @@ const Dashboard = () => {
         onAcknowledge={(eventId) => {
           console.log('Event acknowledged:', eventId);
         }}
+        onEventGenerated={(alert) => setAlerts(prev => [...prev, alert])}
       />
 
       {/* Bottom Panel - Telemetry */}

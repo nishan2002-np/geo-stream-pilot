@@ -212,7 +212,7 @@ const MapView: React.FC<MapViewProps> = ({
     
     // Status indicator
     const statusIndicator = device.status === 'moving' ? '🟢' : 
-                           device.status === 'idle' ? '🟡' : 
+                           device.status === 'stopped' ? '🟡' : 
                            device.status === 'offline' ? '🔴' : '⚪';
     
     return L.divIcon({
@@ -249,7 +249,7 @@ const MapView: React.FC<MapViewProps> = ({
       case 'online':
       case 'moving':
         return 'hsl(var(--gps-moving))';
-      case 'idle':
+      case 'stopped':
         return 'hsl(var(--gps-idle))';
       case 'offline':
         return 'hsl(var(--gps-offline))';
@@ -426,7 +426,7 @@ const MapView: React.FC<MapViewProps> = ({
               <div className="w-3 h-3 rounded-full bg-gps-idle"></div>
               <span>Stopped/Idle</span>
             </div>
-            <span className="font-medium">{devices.filter(d => d.status === 'idle').length}</span>
+            <span className="font-medium">{devices.filter(d => d.status === 'stopped').length}</span>
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
