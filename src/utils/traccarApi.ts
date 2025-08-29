@@ -1,10 +1,10 @@
 import axios, { AxiosInstance } from 'axios';
 
 // Environment variables with defaults
-const TRACCAR_URL = process.env.REACT_APP_TRACCAR_URL || 'https://system.geotrack.com.np/api';
-const TRACCAR_USER = process.env.REACT_APP_TRACCAR_USER || 'nishan@geotrack.com.np';
-const TRACCAR_PASS = process.env.REACT_APP_TRACCAR_PASS || '12345';
-const DEMO_MODE = process.env.REACT_APP_DEMO_MODE === 'true';
+const TRACCAR_URL = import.meta.env.VITE_TRACCAR_URL || 'https://system.geotrack.com.np/api';
+const TRACCAR_USER = import.meta.env.VITE_TRACCAR_USER || 'nishan@geotrack.com.np';
+const TRACCAR_PASS = import.meta.env.VITE_TRACCAR_PASS || '12345';
+const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true';
 
 export interface Device {
   id: number;

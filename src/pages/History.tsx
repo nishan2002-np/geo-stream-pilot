@@ -325,10 +325,10 @@ const History = () => {
                   <div className="flex justify-between">
                     <span>Duration:</span>
                     <span className="font-medium">
-                      {dayjs.duration(
-                        new Date(historicalPositions[historicalPositions.length - 1].deviceTime).getTime() - 
-                        new Date(historicalPositions[0].deviceTime).getTime()
-                      ).humanize()}
+                      {Math.round(
+                        (new Date(historicalPositions[historicalPositions.length - 1].deviceTime).getTime() - 
+                        new Date(historicalPositions[0].deviceTime).getTime()) / (1000 * 60)
+                      )} minutes
                     </span>
                   </div>
                   <div className="flex justify-between">
