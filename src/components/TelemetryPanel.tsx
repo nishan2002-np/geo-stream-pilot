@@ -27,6 +27,7 @@ import {
   TrendingUp,
   Zap,
   MoreVertical,
+  MapPin,
 } from 'lucide-react';
 import { Device, Position } from '@/types/tracking';
 import dayjs from 'dayjs';
@@ -66,17 +67,23 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
     setHistoricalData(generateMockData());
   }, [device.id, position]);
 
-  // Current telemetry values
+  // Current telemetry values from real attributes
   const telemetry = {
     speed: Math.round(position.speed),
     fuel: parseInt(position.attributes?.fuel || '0'),
     battery: parseInt(position.attributes?.battery || '0'),
-    temperature: position.attributes?.temp1 || 25,
+    temperature: Math.round(position.attributes?.temp1 || 25),
     gsm: parseInt(position.attributes?.gsm || '0'),
     satellites: parseInt(position.attributes?.satellites || '0'),
-    ignition: position.attributes?.ignition || false,
+    ignition: position.attributes?.ignition === true || position.attributes?.ignition === 'true',
     course: Math.round(position.course),
     altitude: Math.round(position.altitude),
+    voltage: parseFloat(position.attributes?.voltage || '0'),
+    current: parseFloat(position.attributes?.current || '0'),
+    power: parseFloat(position.attributes?.power || '0'),
+    rpm: parseInt(position.attributes?.rpm || '0'),
+    engineHours: parseInt(position.attributes?.engineHours || '0'),
+    odometer: parseInt(position.attributes?.odometer || '0'),
   };
 
   // Gauge component for circular displays
@@ -205,6 +212,31 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
               </div>
               <span className="font-medium">{telemetry.satellites}</span>
             </div>
+
+            <div className="space-y-2 pt-2 border-t border-border/40">
+              <div className="flex items-center justify-between text-sm">
+                <span>Voltage</span>
+                <span className="font-medium">{telemetry.voltage.toFixed(1)}V</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>RPM</span>
+                <span className="font-medium">{telemetry.rpm}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Odometer</span>
+                <span className="font-medium">{telemetry.odometer.toLocaleString()} km</span>
+              </div>
+            </div>
+
+            {/* Address */}
+            {position.address && (
+              <div className="text-xs text-muted-foreground pt-2 border-t border-border/40">
+                <div className="flex items-center gap-1">
+                  <MapPin className="h-3 w-3" />
+                  <span>{position.address}</span>
+                </div>
+              </div>
+            )}
 
             <div className="text-xs text-muted-foreground pt-2 border-t border-border/40">
               Last update: {dayjs(position.deviceTime).format('MMM D, HH:mm:ss')}

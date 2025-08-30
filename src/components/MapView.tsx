@@ -208,9 +208,9 @@ const MapView: React.FC<MapViewProps> = ({
     const iconSize = selectedDeviceId === device.id ? 36 : 28;
     const fuelLevel = parseInt(position.attributes?.fuel || '0');
     const batteryLevel = parseInt(position.attributes?.battery || '0');
-    const temperature = position.attributes?.temp1 || 0;
+    const temperature = Math.round(position.attributes?.temp1 || 0);
     
-    // Status indicator
+    // Status indicator with exact real status
     const statusIndicator = device.status === 'moving' ? '🟢' : 
                            device.status === 'stopped' ? '🟡' : 
                            device.status === 'offline' ? '🔴' : '⚪';
@@ -228,7 +228,7 @@ const MapView: React.FC<MapViewProps> = ({
             <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
               <div>${statusIndicator} ${device.status.toUpperCase()}</div>
               <div>⛽${fuelLevel}% 🔋${batteryLevel}%</div>
-              <div>🌡️${Math.round(temperature)}°C</div>
+              <div>🌡️${temperature}°C 📡${parseInt(position.attributes?.gsm || '0')}%</div>
             </div>
           </div>
           ${device.status === 'moving' ? `
@@ -437,9 +437,10 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
           <div className="border-t border-border/20 pt-2 mt-2">
             <div className="text-xs text-muted-foreground space-y-1">
-              <div>🔋 All devices at 100% fuel</div>
-              <div>🌡️ Temperature monitoring active</div>
-              <div>📱 Network signals monitored</div>
+              <div>⛽ Meitrack fuel: 260L capacity</div>
+              <div>🌡️ Real-time temperature data</div>
+              <div>📡 Live signal & battery monitoring</div>
+              <div>📍 GPS coordinates with addresses</div>
             </div>
           </div>
         </div>

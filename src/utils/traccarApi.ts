@@ -293,11 +293,26 @@ class TraccarAPI {
     // Offline if no update for more than 10 minutes
     if (minutesSinceUpdate > 10) return 'offline';
     
-    // Moving if speed > 5 km/h and ignition on
-    if (position.speed > 5 && position.attributes?.ignition) return 'moving';
+    // Moving if speed > 3 km/h and ignition on
+    if (position.speed > 3 && position.attributes?.ignition) return 'moving';
     
     // Otherwise stopped (includes ignition off)
     return 'stopped';
+  }
+
+  // Calculate fuel level based on odometer (260L base, 1L = 8km)
+  private calculateFuelLevel(odometer: number): number {
+    const baseFuel = 260; // Base fuel tank capacity in liters
+    const kmPerLiter = 8; // 1 liter = 8 km as specified
+    const totalKmCapacity = baseFuel * kmPerLiter; // 2080 km on full tank
+    
+    // Calculate consumed fuel based on odometer
+    const cycleKm = odometer % totalKmCapacity;
+    const consumedLiters = cycleKm / kmPerLiter;
+    const remainingLiters = baseFuel - consumedLiters;
+    
+    // Return as percentage
+    return Math.max(5, Math.min(100, Math.round((remainingLiters / baseFuel) * 100)));
   }
 
   // Mock data generators
@@ -414,7 +429,7 @@ class TraccarAPI {
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: 100, // Always 100% for online vehicles as requested
+          fuel: this.calculateFuelLevel(125430), // Calculate based on odometer
           battery: 95,
           gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
@@ -458,7 +473,7 @@ class TraccarAPI {
         accuracy: 2.8,
         attributes: {
           ignition: false,
-          fuel: 100, // Always 100% for online vehicles as requested
+          fuel: this.calculateFuelLevel(89432), // Calculate based on odometer
           battery: 78,
           gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
@@ -502,7 +517,7 @@ class TraccarAPI {
         accuracy: 4.1,
         attributes: {
           ignition: true,
-          fuel: 100, // Always 100% for online vehicles as requested
+          fuel: this.calculateFuelLevel(234567), // Calculate based on odometer
           battery: 88,
           gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,

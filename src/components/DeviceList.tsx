@@ -349,20 +349,30 @@ const DeviceList: React.FC<DeviceListProps> = ({
                           </div>
 
                           {position && (
-                            <div className="grid grid-cols-3 gap-2 text-xs">
-                              <div className="flex items-center gap-1">
-                                <Fuel className="h-3 w-3 text-fuel-medium" />
-                                <span>{getAttributeValue(position, 'fuel', '0')}%</span>
+                            <>
+                              <div className="grid grid-cols-3 gap-2 text-xs mb-2">
+                                <div className="flex items-center gap-1">
+                                  <Fuel className="h-3 w-3 text-fuel-medium" />
+                                  <span>{getAttributeValue(position, 'fuel', '0')}%</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Battery className="h-3 w-3 text-primary" />
+                                  <span>{getAttributeValue(position, 'battery', '0')}%</span>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Signal className="h-3 w-3 text-accent" />
+                                  <span>{getAttributeValue(position, 'gsm', '0')}%</span>
+                                </div>
                               </div>
-                              <div className="flex items-center gap-1">
-                                <Battery className="h-3 w-3 text-primary" />
-                                <span>{getAttributeValue(position, 'battery', '0')}%</span>
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Signal className="h-3 w-3 text-accent" />
-                                <span>{getAttributeValue(position, 'gsm', '0')}%</span>
-                              </div>
-                            </div>
+                              
+                              {/* Address */}
+                              {position.address && (
+                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                  <MapPin className="h-3 w-3 flex-shrink-0" />
+                                  <span>{position.address}</span>
+                                </div>
+                              )}
+                            </>
                           )}
 
                           {device.contact && (
