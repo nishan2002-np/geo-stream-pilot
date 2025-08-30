@@ -300,11 +300,11 @@ class TraccarAPI {
     return 'stopped';
   }
 
-  // Calculate fuel level based on odometer (260L base, 1L = 8km)
+  // Calculate fuel level based on odometer (360L base, 1L = 8km)
   private calculateFuelLevel(odometer: number): number {
-    const baseFuel = 260; // Base fuel tank capacity in liters
+    const baseFuel = 360; // Updated fuel tank capacity to 360L for MDVR/dashcam testing
     const kmPerLiter = 8; // 1 liter = 8 km as specified
-    const totalKmCapacity = baseFuel * kmPerLiter; // 2080 km on full tank
+    const totalKmCapacity = baseFuel * kmPerLiter; // 2880 km on full tank
     
     // Calculate consumed fuel based on odometer
     const cycleKm = odometer % totalKmCapacity;
@@ -322,62 +322,65 @@ class TraccarAPI {
     return [
       {
         id: 1,
-        name: 'Fleet Vehicle 001',
-        uniqueId: 'FV001',
+        name: 'MDVR Testing Vehicle',
+        uniqueId: 'MDVR001',
         status: this.getDeviceStatus(1, mockPositions.find(p => p.deviceId === 1)),
         lastUpdate: new Date().toISOString(),
         positionId: 1,
         category: 'car',
         phone: '+977-9841234567',
-        model: 'Toyota Hiace',
+        model: 'Toyota Hiace with MDVR',
         contact: 'Driver: Ram Bahadur',
         attributes: {
           ignition: true,
-          fuel: 75,
+          fuel: 85,
           battery: 95,
           gsm: 85,
           satellites: 12,
           protocol: 'meitrack',
           mdvrConnected: true,
           mediaId: 'camera1',
+          testingMode: 'mdvr',
         },
       },
       {
         id: 2,
-        name: 'Delivery Truck 002',
-        uniqueId: 'DT002',
+        name: 'Dashcam Testing Unit',
+        uniqueId: 'DASH002',
         status: this.getDeviceStatus(2, mockPositions.find(p => p.deviceId === 2)),
         lastUpdate: new Date(Date.now() - 300000).toISOString(),
         positionId: 2,
         category: 'truck',
         phone: '+977-9841234568',
-        model: 'Mahindra Bolero',
+        model: 'Mahindra Bolero + Dashcam',
         contact: 'Driver: Shyam Gurung',
         attributes: {
           ignition: false,
-          fuel: 45,
+          fuel: 60,
           battery: 78,
           gsm: 92,
           satellites: 8,
           protocol: 'meitrack',
-          mdvrConnected: true,
+          mdvrConnected: false,
+          dashcamActive: true,
           mediaId: 'camera2',
+          testingMode: 'dashcam',
         },
       },
       {
         id: 3,
-        name: 'Bus Route A',
-        uniqueId: 'BRA001',
+        name: 'GPS Testing Vehicle',
+        uniqueId: 'GPS003',
         status: this.getDeviceStatus(3, mockPositions.find(p => p.deviceId === 3)),
         lastUpdate: new Date(Date.now() - 30000).toISOString(),
         positionId: 3,
         category: 'bus',
         phone: '+977-9841234569',
-        model: 'Tata Starbus',
+        model: 'Tata Starbus GPS Unit',
         contact: 'Driver: Hari Thapa',
         attributes: {
           ignition: true,
-          fuel: 60,
+          fuel: 75,
           battery: 88,
           gsm: 78,
           satellites: 10,
@@ -386,6 +389,7 @@ class TraccarAPI {
           mediaId: 'camera3',
           passengers: 45,
           maxPassengers: 60,
+          testingMode: 'gps',
         },
       },
     ];
@@ -406,9 +410,9 @@ class TraccarAPI {
       };
     };
 
-    const vehicle1 = generateDynamicPosition(1, { lat: 27.7172, lng: 85.3240 }, 45);
-    const vehicle2 = generateDynamicPosition(2, { lat: 27.7219, lng: 85.3206 }, 0);
-    const vehicle3 = generateDynamicPosition(3, { lat: 27.7089, lng: 85.3206 }, 25);
+    const vehicle1 = generateDynamicPosition(1, { lat: 27.7172, lng: 85.3240 }, 45); // MDVR Testing - Moving
+    const vehicle2 = generateDynamicPosition(2, { lat: 27.7219, lng: 85.3206 }, 0);  // Dashcam Testing - Stopped
+    const vehicle3 = generateDynamicPosition(3, { lat: 27.7089, lng: 85.3206 }, 25); // GPS Testing - Moving
 
     return [
       {
@@ -425,7 +429,7 @@ class TraccarAPI {
         altitude: 1350,
         speed: vehicle1.speed,
         course: 180,
-        address: 'Near Thamel, Kathmandu',
+        address: 'Thamel Chowk, Kathmandu (MDVR Testing Zone)',
         accuracy: 3.2,
         attributes: {
           ignition: true,
@@ -469,7 +473,7 @@ class TraccarAPI {
         altitude: 1345,
         speed: vehicle2.speed,
         course: 90,
-        address: 'Near Ratna Park, Kathmandu',
+        address: 'Ratna Park Bus Station, Kathmandu (Dashcam Test)',
         accuracy: 2.8,
         attributes: {
           ignition: false,
@@ -513,7 +517,7 @@ class TraccarAPI {
         altitude: 1340,
         speed: vehicle3.speed,
         course: 45,
-        address: 'Near Durbar Square, Kathmandu',
+        address: 'Durbar Square Heritage Zone, Kathmandu (GPS Test)',
         accuracy: 4.1,
         attributes: {
           ignition: true,

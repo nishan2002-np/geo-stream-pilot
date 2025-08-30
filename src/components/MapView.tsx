@@ -437,10 +437,10 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
           <div className="border-t border-border/20 pt-2 mt-2">
             <div className="text-xs text-muted-foreground space-y-1">
-              <div>⛽ Meitrack fuel: 260L capacity</div>
-              <div>🌡️ Real-time temperature data</div>
+              <div>⛽ Meitrack fuel: 360L capacity (MDVR/Dashcam)</div>
+              <div>🌡️ Real-time temperature monitoring</div>
               <div>📡 Live signal & battery monitoring</div>
-              <div>📍 GPS coordinates with addresses</div>
+              <div>📍 GPS coordinates with full addresses</div>
             </div>
           </div>
         </div>

@@ -34,7 +34,7 @@ export interface Position {
 
 export interface Alert {
   id: string;
-  type: 'overspeed' | 'geofence' | 'sos' | 'fuel' | 'network' | 'weather' | 'traffic' | 'battery' | 'maintenance';
+  type: 'overspeed' | 'geofence' | 'sos' | 'fuel' | 'network' | 'weather' | 'traffic' | 'battery' | 'maintenance' | 'communication';
   deviceId: number;
   deviceName: string;
   severity: 'low' | 'medium' | 'high' | 'critical';

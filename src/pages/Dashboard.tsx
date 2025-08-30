@@ -44,113 +44,112 @@ const Dashboard = () => {
         setDevices(devicesData);
         setPositions(positionsData);
         
-        // Generate comprehensive alerts for demo
-        const mockAlerts: Alert[] = [
-          {
-            id: 'alert-1',
-            type: 'overspeed',
-            deviceId: 1,
-            deviceName: 'Fleet Vehicle 001',
-            severity: 'high',
-            message: 'Vehicle exceeding speed limit (85 km/h in 60 km/h zone)',
-            timestamp: new Date(Date.now() - 300000).toISOString(),
-            latitude: 27.7172,
-            longitude: 85.3240,
-            acknowledged: false,
-            attributes: { speed: 85, speedLimit: 60 }
-          },
-          {
-            id: 'alert-2',
-            type: 'fuel',
-            deviceId: 2,
-            deviceName: 'Delivery Truck 002',
-            severity: 'medium',
-            message: 'Fuel level normal at 100%',
-            timestamp: new Date(Date.now() - 600000).toISOString(),
-            acknowledged: false,
-            attributes: { fuelLevel: 100 }
-          },
-          {
-            id: 'alert-3',
-            type: 'battery',
-            deviceId: 3,
-            deviceName: 'Bus Route A',
-            severity: 'low',
-            message: 'Battery level at 88% - Normal operation',
-            timestamp: new Date(Date.now() - 900000).toISOString(),
-            acknowledged: false,
-            attributes: { batteryLevel: 88 }
-          },
-          {
-            id: 'alert-4',
-            type: 'network',
-            deviceId: 1,
-            deviceName: 'Fleet Vehicle 001',
-            severity: 'medium',
-            message: 'WiFi signal strength: 85% (Meitrack Protocol)',
-            timestamp: new Date(Date.now() - 150000).toISOString(),
-            acknowledged: false,
-            attributes: { signalStrength: 85, protocol: 'meitrack' }
-          },
-          {
-            id: 'alert-5',
-            type: 'maintenance',
-            deviceId: 2,
-            deviceName: 'Delivery Truck 002',
-            severity: 'low',
-            message: 'Temperature normal at 25.2°C',
-            timestamp: new Date(Date.now() - 450000).toISOString(),
-            acknowledged: false,
-            attributes: { temperature: 25.2 }
-          },
-          {
-            id: 'alert-6',
-            type: 'geofence',
-            deviceId: 3,
-            deviceName: 'Bus Route A',
-            severity: 'medium',
-            message: 'Vehicle entered designated route area',
-            timestamp: new Date(Date.now() - 120000).toISOString(),
-            latitude: 27.7089,
-            longitude: 85.3206,
-            acknowledged: false,
-            attributes: { geofenceName: 'Bus Route Zone A' }
-          },
-          {
-            id: 'alert-7',
-            type: 'sos',
-            deviceId: 1,
-            deviceName: 'Fleet Vehicle 001',
-            severity: 'critical',
-            message: 'Emergency button test - All systems operational',
-            timestamp: new Date(Date.now() - 30000).toISOString(),
-            acknowledged: false,
-            attributes: { testMode: true }
-          },
-          {
-            id: 'alert-8',
-            type: 'weather',
-            deviceId: 2,
-            deviceName: 'Delivery Truck 002',
-            severity: 'low',
-            message: 'Weather conditions normal - Clear skies',
-            timestamp: new Date(Date.now() - 800000).toISOString(),
-            acknowledged: false,
-            attributes: { weather: 'clear', visibility: 'good' }
-          },
-          {
-            id: 'alert-9',
-            type: 'traffic',
-            deviceId: 3,
-            deviceName: 'Bus Route A',
-            severity: 'medium',
-            message: 'Light traffic detected on current route',
-            timestamp: new Date(Date.now() - 200000).toISOString(),
-            acknowledged: false,
-            attributes: { trafficLevel: 'light' }
-          }
-        ];
-        setAlerts(mockAlerts);
+        // Generate real alerts only based on actual conditions
+        const generateRealAlerts = (devices: Device[], positions: Position[]): Alert[] => {
+          const alerts: Alert[] = [];
+          
+          devices.forEach(device => {
+            const position = positions.find(p => p.deviceId === device.id);
+            if (!position) return;
+            
+            // Real overspeed alert
+            if (position.speed > 60) {
+              alerts.push({
+                id: `speed-${device.id}`,
+                type: 'overspeed',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'high',
+                message: `Vehicle exceeding speed limit (${Math.round(position.speed)} km/h)`,
+                timestamp: position.deviceTime,
+                latitude: position.latitude,
+                longitude: position.longitude,
+                acknowledged: false,
+                attributes: { speed: Math.round(position.speed), speedLimit: 60 }
+              });
+            }
+            
+            // Real low fuel alert
+            if (parseInt(position.attributes?.fuel || '100') < 20) {
+              alerts.push({
+                id: `fuel-${device.id}`,
+                type: 'fuel',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'medium',
+                message: `Low fuel level: ${position.attributes?.fuel}%`,
+                timestamp: position.deviceTime,
+                acknowledged: false,
+                attributes: { fuelLevel: parseInt(position.attributes?.fuel || '0') }
+              });
+            }
+            
+            // Real battery alert
+            if (parseInt(position.attributes?.battery || '100') < 30) {
+              alerts.push({
+                id: `battery-${device.id}`,
+                type: 'battery',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'medium',
+                message: `Low battery: ${position.attributes?.battery}%`,
+                timestamp: position.deviceTime,
+                acknowledged: false,
+                attributes: { batteryLevel: parseInt(position.attributes?.battery || '0') }
+              });
+            }
+            
+            // Real offline alert
+            if (device.status === 'offline') {
+              alerts.push({
+                id: `offline-${device.id}`,
+                type: 'network',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'high',
+                message: 'Device is offline - No communication',
+                timestamp: device.lastUpdate,
+                acknowledged: false,
+                attributes: { status: 'offline' }
+              });
+            }
+            
+            // Real temperature alert
+            const temp = position.attributes?.temp1;
+            if (temp && temp > 50) {
+              alerts.push({
+                id: `temp-${device.id}`,
+                type: 'maintenance',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'medium',
+                message: `High temperature detected: ${Math.round(temp)}°C`,
+                timestamp: position.deviceTime,
+                acknowledged: false,
+                attributes: { temperature: Math.round(temp) }
+              });
+            }
+            
+            // Real phone call alert
+            if (position.attributes?.phoneCall) {
+              alerts.push({
+                id: `phone-${device.id}`,
+                type: 'communication',
+                deviceId: device.id,
+                deviceName: device.name,
+                severity: 'low',
+                message: 'Driver on phone call',
+                timestamp: position.deviceTime,
+                acknowledged: false,
+                attributes: { phoneCall: true }
+              });
+            }
+          });
+          
+          return alerts;
+        };
+        
+        setAlerts(generateRealAlerts(devicesData, positionsData));
         
       } catch (error) {
         console.error('Failed to load dashboard data:', error);
