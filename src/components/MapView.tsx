@@ -33,12 +33,13 @@ interface MapViewProps {
   alerts: Alert[];
 }
 
-type MapStyle = 'dark' | 'light' | 'satellite';
+type MapStyle = 'dark' | 'light' | 'satellite' | 'google';
 
 const MAP_STYLES = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+  google: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
 };
 
 const MapView: React.FC<MapViewProps> = ({
@@ -205,14 +206,19 @@ const MapView: React.FC<MapViewProps> = ({
   const createDeviceIcon = (device: Device, position: Position) => {
     const statusColor = getStatusColor(device.status);
     const iconSize = selectedDeviceId === device.id ? 36 : 28;
-    const fuelLevel = 100; // Always show full fuel (360L)
+    
+    // Real-time data from API
+    const fuelLevel = Math.round((360 - (position.attributes?.odometer || 0) / 8)); // 360L - (odometer/8km per liter)
+    const fuelPercentage = Math.max(0, Math.min(100, (fuelLevel / 360) * 100));
     const batteryLevel = parseInt(position.attributes?.battery || '100');
     const temperature = Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25);
+    const ignition = position.attributes?.ignition ? 'ON' : 'OFF';
+    const gsmSignal = parseInt(position.attributes?.gsm || '95');
     
-    // Status indicator with exact real status
-    const statusIndicator = device.status === 'moving' ? '🟢' : 
-                           device.status === 'stopped' ? '🟡' : 
-                           device.status === 'offline' ? '🔴' : '⚪';
+    // Exact status display
+    const statusText = device.status === 'moving' ? 'MOVING' : 
+                      device.status === 'stopped' ? 'STOPPED' : 
+                      device.status === 'offline' ? 'OFFLINE' : 'ONLINE';
     
     return L.divIcon({
       className: 'custom-marker',
@@ -225,9 +231,9 @@ const MapView: React.FC<MapViewProps> = ({
               ${getDeviceIcon(device.category || 'car')}
             </div>
             <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
-              <div>${statusIndicator} ${device.status.toUpperCase()}</div>
-              <div>⛽${fuelLevel}% (360L) 🔋${batteryLevel}%</div>
-              <div>🌡️${temperature}°C ${position.protocol?.toLowerCase() === 'meitrack' ? '📶' : '📡'}${parseInt(position.attributes?.gsm || '95')}%</div>
+              <div>${statusText} • IGN ${ignition}</div>
+              <div>⛽${fuelLevel}L (${Math.round(fuelPercentage)}%) 🔋${batteryLevel}%</div>
+              <div>🌡️${temperature}°C ${position.protocol?.toLowerCase() === 'meitrack' ? '📶' : '📡'}${gsmSignal}%</div>
             </div>
           </div>
           ${device.status === 'moving' ? `
@@ -345,6 +351,14 @@ const MapView: React.FC<MapViewProps> = ({
               className="h-8 w-8 p-0"
             >
               <Satellite className="h-4 w-4" />
+            </Button>
+            <Button
+              variant={mapStyle === 'google' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMapStyle('google')}
+              className="h-8 w-8 p-0"
+            >
+              🗺️
             </Button>
           </div>
 

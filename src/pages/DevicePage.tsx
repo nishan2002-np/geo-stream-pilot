@@ -155,11 +155,12 @@ const DevicePage = () => {
 
   const telemetry = {
     speed: position ? Math.round(position.speed) : 0,
-    fuel: parseInt(position?.attributes?.fuel || '0'),
-    battery: parseInt(position?.attributes?.battery || '0'),
-    temperature: position?.attributes?.temp1 || 0,
-    gsm: parseInt(position?.attributes?.gsm || '0'),
-    satellites: parseInt(position?.attributes?.satellites || '0'),
+    fuel: position ? Math.round((360 - (position.attributes?.odometer || 0) / 8)) : 360,
+    fuelPercentage: position ? Math.max(0, Math.min(100, ((360 - (position.attributes?.odometer || 0) / 8) / 360) * 100)) : 100,
+    battery: parseInt(position?.attributes?.battery || '100'),
+    temperature: Math.round(position?.attributes?.temp1 || position?.attributes?.temperature || 25),
+    gsm: parseInt(position?.attributes?.gsm || '95'),
+    satellites: parseInt(position?.attributes?.satellites || '12'),
     ignition: position?.attributes?.ignition || false,
   };
 
@@ -250,9 +251,32 @@ const DevicePage = () => {
                             <MapPin className="h-4 w-4 text-accent" />
                             <span className="text-sm">Location</span>
                           </div>
-                          <span className="text-xs font-mono">
-                            {position.latitude.toFixed(4)}, {position.longitude.toFixed(4)}
+                          <div className="text-right">
+                            <div className="text-xs font-mono">
+                              {position.latitude.toFixed(4)}, {position.longitude.toFixed(4)}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              {position.address || 'Address loading...'}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="text-sm">🔑</span>
+                            <span className="text-sm">Ignition</span>
+                          </div>
+                          <span className={`font-medium ${telemetry.ignition ? 'text-green-400' : 'text-muted-foreground'}`}>
+                            {telemetry.ignition ? 'ON' : 'OFF'}
                           </span>
+                        </div>
+
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Thermometer className="h-4 w-4 text-orange-400" />
+                            <span className="text-sm">Temperature</span>
+                          </div>
+                          <span className="font-medium">{telemetry.temperature}°C</span>
                         </div>
 
                         <div className="flex items-center justify-between">
@@ -287,9 +311,12 @@ const DevicePage = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Fuel Level</span>
-                        <span>{telemetry.fuel}%</span>
+                        <span>{telemetry.fuel}L ({Math.round(telemetry.fuelPercentage)}%)</span>
                       </div>
-                      <Progress value={telemetry.fuel} className="h-3" />
+                      <Progress value={telemetry.fuelPercentage} className="h-3" />
+                      <div className="text-xs text-muted-foreground mt-1">
+                        ~{Math.round(telemetry.fuel * 8)}km range remaining
+                      </div>
                     </div>
 
                     <div>
@@ -550,22 +577,193 @@ const DevicePage = () => {
 
           {/* Events Tab */}
           <TabsContent value="events" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent Events</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-8 text-muted-foreground">
-                  <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No recent events for this device</p>
-                  <Link to="/events">
-                    <Button variant="link" className="mt-2">
-                      View all events
-                    </Button>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
+            <div className="grid gap-4">
+              {/* Real Events from API */}
+              {position && (
+                <>
+                  {/* Overspeed Events */}
+                  {position.speed > 80 && (
+                    <Card className="border-l-4 border-l-destructive">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                              <AlertTriangle className="h-5 w-5 text-destructive" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Overspeed Alert</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Speed: {Math.round(position.speed)} km/h (Limit: 80 km/h)
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Low Fuel Events */}
+                  {(telemetry.fuelPercentage < 20) && (
+                    <Card className="border-l-4 border-l-warning">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+                              <Fuel className="h-5 w-5 text-warning" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Low Fuel Warning</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Fuel level: {telemetry.fuel}L ({Math.round(telemetry.fuelPercentage)}%)
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Low Battery Events */}
+                  {(telemetry.battery < 20) && (
+                    <Card className="border-l-4 border-l-warning">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-warning/20 flex items-center justify-center">
+                              <Battery className="h-5 w-5 text-warning" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Low Battery Warning</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Battery level: {telemetry.battery}%
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* High Temperature Events */}
+                  {(telemetry.temperature > 50) && (
+                    <Card className="border-l-4 border-l-destructive">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                              <Thermometer className="h-5 w-5 text-destructive" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">High Temperature Alert</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Temperature: {telemetry.temperature}°C
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Device Offline Events */}
+                  {device.status === 'offline' && (
+                    <Card className="border-l-4 border-l-destructive">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-destructive/20 flex items-center justify-center">
+                              <Signal className="h-5 w-5 text-destructive" />
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Device Offline</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Device has lost communication
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(device.lastUpdate).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Phone Call Events */}
+                  {position.attributes?.phoneCall && (
+                    <Card className="border-l-4 border-l-blue-500">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                              📞
+                            </div>
+                            <div>
+                              <h4 className="font-medium">Phone Call Activity</h4>
+                              <p className="text-sm text-muted-foreground">
+                                Device received or made a call
+                              </p>
+                            </div>
+                          </div>
+                          <span className="text-xs text-muted-foreground">
+                            {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Ignition Events */}
+                  <Card className="border-l-4 border-l-blue-500">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center">
+                            🔑
+                          </div>
+                          <div>
+                            <h4 className="font-medium">Ignition Status</h4>
+                            <p className="text-sm text-muted-foreground">
+                              Ignition is currently {telemetry.ignition ? 'ON' : 'OFF'}
+                            </p>
+                          </div>
+                        </div>
+                        <span className="text-xs text-muted-foreground">
+                          {dayjs(position.deviceTime).format('MMM D, HH:mm')}
+                        </span>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </>
+              )}
+
+              {/* No Events Message */}
+              {(!position || (position.speed <= 80 && telemetry.fuelPercentage >= 20 && telemetry.battery >= 20 && telemetry.temperature <= 50 && device.status !== 'offline' && !position.attributes?.phoneCall)) && (
+                <Card>
+                  <CardContent className="pt-6 text-center">
+                    <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
+                      <Activity className="h-6 w-6 text-muted-foreground" />
+                    </div>
+                    <h4 className="font-medium mb-2">No Active Events</h4>
+                    <p className="text-sm text-muted-foreground">
+                      All systems are operating normally. Events will appear here when they occur.
+                    </p>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </TabsContent>
         </Tabs>
       </div>

@@ -302,17 +302,17 @@ class TraccarAPI {
 
   // Calculate fuel level based on odometer (360L base, 1L = 8km)
   private calculateFuelLevel(odometer: number): number {
-    const baseFuel = 360; // Updated fuel tank capacity to 360L for MDVR/dashcam testing
+    const baseFuel = 360; // 360L fuel tank capacity for MDVR/dashcam testing
     const kmPerLiter = 8; // 1 liter = 8 km as specified
-    const totalKmCapacity = baseFuel * kmPerLiter; // 2880 km on full tank
+    const totalKmCapacity = baseFuel * kmPerLiter; // 2880 km on full tank (360L * 8km/L)
     
-    // Calculate consumed fuel based on odometer
+    // Calculate consumed fuel based on odometer reading
     const cycleKm = odometer % totalKmCapacity;
     const consumedLiters = cycleKm / kmPerLiter;
-    const remainingLiters = baseFuel - consumedLiters;
+    const remainingLiters = Math.max(0, baseFuel - consumedLiters);
     
-    // Return as percentage
-    return Math.max(5, Math.min(100, Math.round((remainingLiters / baseFuel) * 100)));
+    // Return actual liters remaining (not percentage)
+    return Math.round(remainingLiters);
   }
 
   // Mock data generators
