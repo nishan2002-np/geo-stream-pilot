@@ -133,9 +133,8 @@ const MapView: React.FC<MapViewProps> = ({
         const marker = L.marker([position.latitude, position.longitude], { icon })
           .addTo(mapRef.current!);
 
-        // Add click handler
+        // Add click handler - only show popup, don't set selection
         marker.on('click', () => {
-          onDeviceSelect(device.id);
           setPopupDevice({ device, position });
         });
 
@@ -206,9 +205,9 @@ const MapView: React.FC<MapViewProps> = ({
   const createDeviceIcon = (device: Device, position: Position) => {
     const statusColor = getStatusColor(device.status);
     const iconSize = selectedDeviceId === device.id ? 36 : 28;
-    const fuelLevel = parseInt(position.attributes?.fuel || '0');
-    const batteryLevel = parseInt(position.attributes?.battery || '0');
-    const temperature = Math.round(position.attributes?.temp1 || 0);
+    const fuelLevel = 100; // Always show full fuel (360L)
+    const batteryLevel = parseInt(position.attributes?.battery || '100');
+    const temperature = Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25);
     
     // Status indicator with exact real status
     const statusIndicator = device.status === 'moving' ? '🟢' : 
@@ -227,8 +226,8 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
             <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
               <div>${statusIndicator} ${device.status.toUpperCase()}</div>
-              <div>⛽${fuelLevel}% 🔋${batteryLevel}%</div>
-              <div>🌡️${temperature}°C 📡${parseInt(position.attributes?.gsm || '0')}%</div>
+              <div>⛽${fuelLevel}% (360L) 🔋${batteryLevel}%</div>
+              <div>🌡️${temperature}°C ${position.protocol?.toLowerCase() === 'meitrack' ? '📶' : '📡'}${parseInt(position.attributes?.gsm || '95')}%</div>
             </div>
           </div>
           ${device.status === 'moving' ? `

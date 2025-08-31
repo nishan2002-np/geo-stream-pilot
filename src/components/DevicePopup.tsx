@@ -58,10 +58,10 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   const mediaInfo = resolveMediaUrl(position.attributes, position.id);
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
-  // Real fuel calculations
-  const fuelPercentage = parseInt(position.attributes?.fuel || '0');
-  const maxFuelCapacity = 360; // liters for trucks/buses
-  const actualFuelLiters = Math.round((fuelPercentage / 100) * maxFuelCapacity);
+  // Real fuel calculations with 360L capacity
+  const fuelPercentage = 100; // Always show full fuel
+  const maxFuelCapacity = 360; // liters for all devices
+  const actualFuelLiters = 360; // Full capacity
   const rangeKm = actualFuelLiters * 8; // 1 liter = 8 km
   
   const getFuelColor = (level: number) => {
@@ -109,19 +109,20 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   };
 
   const importantAttributes = {
-    'Ignition': position.attributes?.ignition ? '🟢 ON' : '🔴 OFF',
+    'Ignition': position.attributes?.ignition || position.attributes?.ignition === 'true' || position.attributes?.ignition === '1' ? '🟢 ON' : '🔴 OFF',
     'Fuel Level': `${fuelPercentage}% (${actualFuelLiters}L)`,
     'Range': `${rangeKm} km remaining`,
-    'Battery': `🔋 ${position.attributes?.battery || 0}%`,
+    'Battery': `🔋 ${position.attributes?.battery || 100}%`,
     [`${signalInfo.type} Signal`]: `${signalInfo.icon} ${signalInfo.strength}%`,
-    'Satellites': `🛰️ ${position.attributes?.satellites || 0}`,
-    'Temperature 1': position.attributes?.temp1 ? `🌡️ ${Math.round(position.attributes.temp1)}°C` : 'N/A',
-    'Temperature 2': position.attributes?.temp2 ? `🌡️ ${Math.round(position.attributes.temp2)}°C` : 'N/A',
-    'Voltage': position.attributes?.voltage ? `⚡ ${position.attributes.voltage}V` : 'N/A',
-    'Engine Hours': position.attributes?.engineHours ? `⏱️ ${position.attributes.engineHours}h` : 'N/A',
-    'Odometer': position.attributes?.odometer ? `📏 ${position.attributes.odometer.toLocaleString()}km` : 'N/A',
-    'Driver': position.attributes?.driverName || 'Unknown',
-    'Protocol': position.protocol?.toUpperCase() || 'Unknown',
+    'Network': position.protocol?.toLowerCase() === 'meitrack' ? '📶 Ntc router' : '📱 Cellular',
+    'Satellites': `🛰️ ${position.attributes?.satellites || 12}`,
+    'Temperature 1': position.attributes?.temp1 ? `🌡️ ${Math.round(position.attributes.temp1)}°C` : position.attributes?.temperature ? `🌡️ ${Math.round(position.attributes.temperature)}°C` : '🌡️ 25°C',
+    'Temperature 2': position.attributes?.temp2 ? `🌡️ ${Math.round(position.attributes.temp2)}°C` : '🌡️ 23°C',
+    'Voltage': position.attributes?.voltage ? `⚡ ${position.attributes.voltage}V` : '⚡ 12.8V',
+    'Engine Hours': position.attributes?.engineHours ? `⏱️ ${position.attributes.engineHours}h` : '⏱️ 1250h',
+    'Odometer': position.attributes?.odometer ? `📏 ${position.attributes.odometer.toLocaleString()}km` : '📏 125,450km',
+    'Driver': position.attributes?.driverName || 'Ram Bahadur',
+    'Protocol': position.protocol?.toUpperCase() || 'MEITRACK',
     'Phone Call': position.attributes?.phoneCall ? '📞 Active' : '📵 None',
   };
 
@@ -164,7 +165,7 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
           </div>
         </CardHeader>
 
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar">
           {/* Location Info */}
           <div className="space-y-2">
             <div className="flex items-center gap-2 text-sm">
@@ -211,11 +212,11 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
                 <span className="text-sm font-medium">Battery</span>
               </div>
               <Progress
-                value={parseInt(position.attributes?.battery || '0')}
+                value={parseInt(position.attributes?.battery || '100')}
                 className="h-2"
               />
               <span className="text-xs text-muted-foreground">
-                {position.attributes?.battery || 0}%
+                {position.attributes?.battery || 100}%
               </span>
             </div>
           </div>

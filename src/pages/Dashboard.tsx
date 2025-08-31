@@ -308,21 +308,30 @@ const Dashboard = () => {
         onEventGenerated={(alert) => setAlerts(prev => [...prev, alert])}
       />
 
-      {/* Bottom Panel - Telemetry */}
-      {selectedDevice && selectedPosition && (
-        <motion.div
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="border-t border-border/40 bg-card/50 backdrop-blur-lg"
-        >
-          <TelemetryPanel
-            device={selectedDevice}
-            position={selectedPosition}
-            onClose={() => setSelectedDeviceId(null)}
-          />
-        </motion.div>
-      )}
+      {/* Bottom Panel - Live Telemetry (shows immediately when device selected) */}
+      {selectedDeviceId && (() => {
+        const device = devices.find(d => d.id === selectedDeviceId);
+        const position = positions.find(p => p.deviceId === selectedDeviceId);
+        
+        if (device && position) {
+          return (
+            <motion.div
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 20, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="border-t border-border/40 bg-card/50 backdrop-blur-lg"
+            >
+              <TelemetryPanel
+                device={device}
+                position={position}
+                onClose={() => setSelectedDeviceId(null)}
+              />
+            </motion.div>
+          );
+        }
+        return null;
+      })()}
     </div>
   );
 };

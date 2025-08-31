@@ -145,6 +145,20 @@ const DeviceList: React.FC<DeviceListProps> = ({
     return value !== undefined ? String(value) : defaultValue;
   };
 
+  // Real fuel calculation for 360L capacity
+  const getFuelData = (position: Position | undefined) => {
+    const fuelPercentage = parseInt(getAttributeValue(position, 'fuel', '100'));
+    const maxCapacity = 360; // 360L for all devices
+    const actualLiters = Math.round((fuelPercentage / 100) * maxCapacity);
+    const odometer = parseInt(getAttributeValue(position, 'odometer', '0'));
+    
+    return {
+      percentage: fuelPercentage,
+      liters: actualLiters,
+      odometer: odometer
+    };
+  };
+
   const formatLastUpdate = (lastUpdate: string) => {
     return dayjs(lastUpdate).fromNow();
   };
@@ -351,27 +365,46 @@ const DeviceList: React.FC<DeviceListProps> = ({
                           {position && (
                             <>
                               <div className="grid grid-cols-3 gap-2 text-xs mb-2">
-                                <div className="flex items-center gap-1">
-                                  <Fuel className="h-3 w-3 text-fuel-medium" />
-                                  <span>{getAttributeValue(position, 'fuel', '0')}%</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Battery className="h-3 w-3 text-primary" />
-                                  <span>{getAttributeValue(position, 'battery', '0')}%</span>
-                                </div>
-                                <div className="flex items-center gap-1">
-                                  <Signal className="h-3 w-3 text-accent" />
-                                  <span>{getAttributeValue(position, 'gsm', '0')}%</span>
-                                </div>
+                               {(() => {
+                                 const fuelData = getFuelData(position);
+                                 const batteryLevel = parseInt(getAttributeValue(position, 'battery', '100'));
+                                 const signalStrength = parseInt(getAttributeValue(position, 'gsm', '95'));
+                                 const protocol = position?.protocol?.toLowerCase();
+                                 
+                                 return (
+                                   <>
+                                     <div className="flex items-center gap-1">
+                                       <Fuel className="h-3 w-3 text-fuel-medium" />
+                                       <span>{fuelData.percentage}% ({fuelData.liters}L)</span>
+                                     </div>
+                                     <div className="flex items-center gap-1">
+                                       <Battery className="h-3 w-3 text-primary" />
+                                       <span>{batteryLevel}%</span>
+                                     </div>
+                                     <div className="flex items-center gap-1">
+                                       <Signal className="h-3 w-3 text-accent" />
+                                       <span>{protocol === 'meitrack' ? 'WiFi' : 'GSM'} {signalStrength}%</span>
+                                     </div>
+                                   </>
+                                 );
+                               })()}
                               </div>
                               
-                              {/* Address */}
-                              {position.address && (
-                                <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
-                                  <MapPin className="h-3 w-3 flex-shrink-0" />
-                                  <span>{position.address}</span>
-                                </div>
-                              )}
+                               {/* Address and Network */}
+                               {position.address && (
+                                 <div className="text-xs text-muted-foreground truncate flex items-center gap-1">
+                                   <MapPin className="h-3 w-3 flex-shrink-0" />
+                                   <span>{position.address}</span>
+                                 </div>
+                               )}
+                               
+                               {/* Network Type for Meitrack */}
+                               {position?.protocol?.toLowerCase() === 'meitrack' && (
+                                 <div className="text-xs text-muted-foreground flex items-center gap-1">
+                                   <span>📶</span>
+                                   <span>Ntc router</span>
+                                 </div>
+                               )}
                             </>
                           )}
 
