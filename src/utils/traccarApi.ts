@@ -300,19 +300,16 @@ class TraccarAPI {
     return 'stopped';
   }
 
-  // Calculate fuel level based on odometer (360L base, 1L = 8km)
+  // Calculate fuel level based on odometer (360L base, 1L = 8km) - Reset from 0
   private calculateFuelLevel(odometer: number): number {
-    const baseFuel = 360; // 360L fuel tank capacity for MDVR/dashcam testing
-    const kmPerLiter = 8; // 1 liter = 8 km as specified
-    const totalKmCapacity = baseFuel * kmPerLiter; // 2880 km on full tank (360L * 8km/L)
+    const baseFuel = 360; // 360L fuel tank capacity
+    const kmPerLiter = 8; // 1 liter = 8 km
     
-    // Calculate consumed fuel based on odometer reading
-    const cycleKm = odometer % totalKmCapacity;
-    const consumedLiters = cycleKm / kmPerLiter;
+    // Start with fresh odometer from 0 - fuel consumption begins now
+    const consumedLiters = Math.floor(odometer / kmPerLiter);
     const remainingLiters = Math.max(0, baseFuel - consumedLiters);
     
-    // Return actual liters remaining (not percentage)
-    return Math.round(remainingLiters);
+    return remainingLiters;
   }
 
   // Mock data generators
@@ -433,7 +430,7 @@ class TraccarAPI {
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(125430), // Calculate based on odometer
+          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 100000 / 1000)), // Calculate based on reset odometer
           battery: 95,
           gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
@@ -449,7 +446,7 @@ class TraccarAPI {
           power: 26.5,
           rpm: 2150,
           engineHours: 1245,
-          odometer: 125430,
+          odometer: Math.floor(Date.now() % 100000 / 1000), // Reset odometer - starts from 0 and increments
           image: 'snapshot_001.jpg',
           mediaId: 101,
           protocol: 'meitrack',
@@ -477,7 +474,7 @@ class TraccarAPI {
         accuracy: 2.8,
         attributes: {
           ignition: false,
-          fuel: this.calculateFuelLevel(89432), // Calculate based on odometer
+          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 80000 / 1200)), // Calculate based on reset odometer
           battery: 78,
           gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
@@ -493,7 +490,7 @@ class TraccarAPI {
           power: 9.9,
           rpm: 0,
           engineHours: 987,
-          odometer: 89432,
+          odometer: Math.floor(Date.now() % 80000 / 1200), // Reset odometer - starts from 0
           image: 'snapshot_002.jpg',
           mediaId: 102,
           protocol: 'meitrack',
@@ -521,7 +518,7 @@ class TraccarAPI {
         accuracy: 4.1,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(234567), // Calculate based on odometer
+          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 90000 / 1500)), // Calculate based on reset odometer
           battery: 88,
           gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,
@@ -538,7 +535,7 @@ class TraccarAPI {
           power: 41.0,
           rpm: 1890,
           engineHours: 2156,
-          odometer: 234567,
+          odometer: Math.floor(Date.now() % 90000 / 1500), // Reset odometer - starts from 0
           passengers: 45,
           maxPassengers: 60,
           doorOpen: false,
