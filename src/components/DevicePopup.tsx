@@ -59,9 +59,10 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
   // Real fuel calculations with 360L capacity
-  const fuelPercentage = 100; // Always show full fuel
-  const maxFuelCapacity = 360; // liters for all devices
-  const actualFuelLiters = 360; // Full capacity
+  const odometerKm = position.attributes?.odometer || 0;
+  const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
+  const actualFuelLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
+  const fuelPercentage = (actualFuelLiters / 360) * 100;
   const rangeKm = actualFuelLiters * 8; // 1 liter = 8 km
   
   const getFuelColor = (level: number) => {

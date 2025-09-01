@@ -145,17 +145,17 @@ const DeviceList: React.FC<DeviceListProps> = ({
     return value !== undefined ? String(value) : defaultValue;
   };
 
-  // Real fuel calculation for 360L capacity
+  // Real fuel calculation for 360L capacity with odometer-based consumption
   const getFuelData = (position: Position | undefined) => {
-    const fuelPercentage = parseInt(getAttributeValue(position, 'fuel', '100'));
-    const maxCapacity = 360; // 360L for all devices
-    const actualLiters = Math.round((fuelPercentage / 100) * maxCapacity);
-    const odometer = parseInt(getAttributeValue(position, 'odometer', '0'));
+    if (!position) return { liters: 360, odometer: 0 };
+    
+    const odometerKm = parseInt(getAttributeValue(position, 'odometer', '0'));
+    const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
+    const actualLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
     
     return {
-      percentage: fuelPercentage,
       liters: actualLiters,
-      odometer: odometer
+      odometer: odometerKm
     };
   };
 
@@ -373,10 +373,10 @@ const DeviceList: React.FC<DeviceListProps> = ({
                                  
                                  return (
                                    <>
-                                     <div className="flex items-center gap-1">
-                                       <Fuel className="h-3 w-3 text-fuel-medium" />
-                                       <span>{fuelData.percentage}% ({fuelData.liters}L)</span>
-                                     </div>
+                                      <div className={`flex items-center gap-1 ${device.status === 'moving' ? 'text-red-400 animate-pulse' : ''}`}>
+                                        <Fuel className="h-3 w-3 text-fuel-medium" />
+                                        <span>{fuelData.liters}L</span>
+                                      </div>
                                      <div className="flex items-center gap-1">
                                        <Battery className="h-3 w-3 text-primary" />
                                        <span>{batteryLevel}%</span>

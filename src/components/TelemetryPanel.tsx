@@ -68,10 +68,14 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
   }, [device.id, position]);
 
   // Real telemetry values with 360L fuel capacity
+  const odometerKm = position.attributes?.odometer || 0;
+  const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
+  const fuelLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
+  
   const telemetry = {
     speed: Math.round(position.speed),
-    fuel: 100, // Always show full fuel (360L capacity)
-    fuelLiters: 360, // Full 360L capacity
+    fuel: Math.round((fuelLiters / 360) * 100), // Fuel percentage
+    fuelLiters: fuelLiters, // Actual liters remaining
     battery: parseInt(position.attributes?.battery || '100'),
     temperature: Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25),
     gsm: parseInt(position.attributes?.gsm || '95'),

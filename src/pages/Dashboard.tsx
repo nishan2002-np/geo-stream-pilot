@@ -45,42 +45,54 @@ const Dashboard = () => {
         setPositions(positionsData);
         
         // Generate real alerts only based on actual conditions
-        const generateRealAlerts = (devices: Device[], positions: Position[]): Alert[] => {
+        const generateRealAlerts = async (devices: Device[], positions: Position[]): Promise<Alert[]> => {
           const alerts: Alert[] = [];
           
-          devices.forEach(device => {
+          for (const device of devices) {
             const position = positions.find(p => p.deviceId === device.id);
-            if (!position) return;
+            if (!position) continue;
             
-            // Real overspeed alert
-            if (position.speed > 60) {
+            // Real overspeed alert with address (>20 km/h)
+            if (position.speed > 20) {
+              let address = `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`;
+              try {
+                const { getAddressFromCoordinates } = await import('@/utils/geocoding');
+                address = await getAddressFromCoordinates(position.latitude, position.longitude);
+              } catch (error) {
+                console.error('Failed to get address:', error);
+              }
               alerts.push({
                 id: `speed-${device.id}`,
                 type: 'overspeed',
                 deviceId: device.id,
                 deviceName: device.name,
                 severity: 'high',
-                message: `Vehicle exceeding speed limit (${Math.round(position.speed)} km/h)`,
+                message: `Overspeed: ${Math.round(position.speed)} km/h at ${address}`,
                 timestamp: position.deviceTime,
                 latitude: position.latitude,
                 longitude: position.longitude,
                 acknowledged: false,
-                attributes: { speed: Math.round(position.speed), speedLimit: 60 }
+                attributes: { speed: Math.round(position.speed), speedLimit: 20 }
               });
             }
             
-            // Real low fuel alert
-            if (parseInt(position.attributes?.fuel || '100') < 20) {
+            // Real low fuel alert (below 20% of 360L)
+            const odometerKm = position.attributes?.odometer || 0;
+            const fuelUsed = Math.floor(odometerKm / 8);
+            const fuelLevel = Math.max(0, 360 - fuelUsed);
+            const fuelPercentage = (fuelLevel / 360) * 100;
+            
+            if (fuelPercentage < 20) {
               alerts.push({
                 id: `fuel-${device.id}`,
                 type: 'fuel',
                 deviceId: device.id,
                 deviceName: device.name,
                 severity: 'medium',
-                message: `Low fuel level: ${position.attributes?.fuel}%`,
+                message: `Low fuel: ${fuelLevel}L`,
                 timestamp: position.deviceTime,
                 acknowledged: false,
-                attributes: { fuelLevel: parseInt(position.attributes?.fuel || '0') }
+                attributes: { fuelLevel: fuelLevel }
               });
             }
             
@@ -144,12 +156,12 @@ const Dashboard = () => {
                 attributes: { phoneCall: true }
               });
             }
-          });
+          }
           
           return alerts;
         };
         
-        setAlerts(generateRealAlerts(devicesData, positionsData));
+        setAlerts(await generateRealAlerts(devicesData, positionsData));
         
       } catch (error) {
         console.error('Failed to load dashboard data:', error);

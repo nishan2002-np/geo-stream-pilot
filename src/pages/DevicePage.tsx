@@ -581,8 +581,8 @@ const DevicePage = () => {
               {/* Real Events from API */}
               {position && (
                 <>
-                  {/* Overspeed Events */}
-                  {position.speed > 80 && (
+                  {/* Overspeed Events - Now 20+ km/h */}
+                  {position.speed > 20 && (
                     <Card className="border-l-4 border-l-destructive">
                       <CardContent className="pt-4">
                         <div className="flex items-center justify-between">
@@ -593,7 +593,10 @@ const DevicePage = () => {
                             <div>
                               <h4 className="font-medium">Overspeed Alert</h4>
                               <p className="text-sm text-muted-foreground">
-                                Speed: {Math.round(position.speed)} km/h (Limit: 80 km/h)
+                                Speed: {Math.round(position.speed)} km/h (Limit: 20 km/h)
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                📍 {position.address || `${position.latitude.toFixed(4)}, ${position.longitude.toFixed(4)}`}
                               </p>
                             </div>
                           </div>
@@ -750,7 +753,7 @@ const DevicePage = () => {
               )}
 
               {/* No Events Message */}
-              {(!position || (position.speed <= 80 && telemetry.fuelPercentage >= 20 && telemetry.battery >= 20 && telemetry.temperature <= 50 && device.status !== 'offline' && !position.attributes?.phoneCall)) && (
+              {(!position || (position.speed <= 20 && telemetry.fuelPercentage >= 20 && telemetry.battery >= 20 && telemetry.temperature <= 50 && device.status !== 'offline' && !position.attributes?.phoneCall)) && (
                 <Card>
                   <CardContent className="pt-6 text-center">
                     <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">

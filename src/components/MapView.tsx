@@ -33,13 +33,14 @@ interface MapViewProps {
   alerts: Alert[];
 }
 
-type MapStyle = 'dark' | 'light' | 'satellite' | 'google';
+type MapStyle = 'dark' | 'light' | 'satellite' | 'google' | 'hybrid';
 
 const MAP_STYLES = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
   google: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+  hybrid: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
 };
 
 const MapView: React.FC<MapViewProps> = ({
@@ -207,9 +208,10 @@ const MapView: React.FC<MapViewProps> = ({
     const statusColor = getStatusColor(device.status);
     const iconSize = selectedDeviceId === device.id ? 36 : 28;
     
-    // Real-time data from API
-    const fuelLevel = Math.round((360 - (position.attributes?.odometer || 0) / 8)); // 360L - (odometer/8km per liter)
-    const fuelPercentage = Math.max(0, Math.min(100, (fuelLevel / 360) * 100));
+    // Real-time data from API with corrected fuel calculation
+    const odometerKm = position.attributes?.odometer || 0;
+    const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
+    const fuelLevel = Math.max(0, 360 - fuelUsed); // 360L capacity
     const batteryLevel = parseInt(position.attributes?.battery || '100');
     const temperature = Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25);
     const ignition = position.attributes?.ignition ? 'ON' : 'OFF';
@@ -232,7 +234,7 @@ const MapView: React.FC<MapViewProps> = ({
             </div>
             <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
               <div>${statusText} • IGN ${ignition}</div>
-              <div>⛽${fuelLevel}L (${Math.round(fuelPercentage)}%) 🔋${batteryLevel}%</div>
+              <div>⛽${fuelLevel}L 🔋${batteryLevel}%</div>
               <div>🌡️${temperature}°C ${position.protocol?.toLowerCase() === 'meitrack' ? '📶' : '📡'}${gsmSignal}%</div>
             </div>
           </div>
@@ -360,6 +362,14 @@ const MapView: React.FC<MapViewProps> = ({
             >
               🗺️
             </Button>
+            <Button
+              variant={mapStyle === 'hybrid' ? 'default' : 'ghost'}
+              size="sm"
+              onClick={() => setMapStyle('hybrid')}
+              className="h-8 w-8 p-0"
+            >
+              🛰️
+            </Button>
           </div>
 
           {/* Trail Toggle */}
@@ -450,7 +460,7 @@ const MapView: React.FC<MapViewProps> = ({
           </div>
           <div className="border-t border-border/20 pt-2 mt-2">
             <div className="text-xs text-muted-foreground space-y-1">
-              <div>⛽ Meitrack fuel: 360L capacity (MDVR/Dashcam)</div>
+              <div>⛽ Fuel: 360L capacity (8km per 1L)</div>
               <div>🌡️ Real-time temperature monitoring</div>
               <div>📡 Live signal & battery monitoring</div>
               <div>📍 GPS coordinates with full addresses</div>
