@@ -76,11 +76,12 @@ const Dashboard = () => {
               });
             }
             
-            // Real low fuel alert (below 20% of 360L)
+            // Real low fuel alert (below 20% of 260L)
             const odometerKm = position.attributes?.odometer || 0;
-            const fuelUsed = Math.floor(odometerKm / 8);
-            const fuelLevel = Math.max(0, 360 - fuelUsed);
-            const fuelPercentage = (fuelLevel / 360) * 100;
+            const todayOdometer = position.attributes?.todayOdometer || 0;
+            const fuelUsed = Math.floor(todayOdometer / 8); // Only today's consumption
+            const fuelLevel = Math.max(0, 260 - fuelUsed); // 260L capacity
+            const fuelPercentage = (fuelLevel / 260) * 100;
             
             if (fuelPercentage < 20) {
               alerts.push({

@@ -67,14 +67,15 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
     setHistoricalData(generateMockData());
   }, [device.id, position]);
 
-  // Real telemetry values with 360L fuel capacity
-  const odometerKm = position.attributes?.odometer || 0;
-  const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
-  const fuelLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
+  // Real telemetry values with 260L fuel capacity based on TODAY'S odometer
+  const totalOdometer = position.attributes?.odometer || 0;
+  const todayOdometer = position.attributes?.todayOdometer || 0;
+  const fuelUsed = Math.floor(todayOdometer / 8); // 8km per 1L (TODAY'S consumption only)
+  const fuelLiters = Math.max(0, 260 - fuelUsed); // 260L capacity
   
   const telemetry = {
     speed: Math.round(position.speed),
-    fuel: Math.round((fuelLiters / 360) * 100), // Fuel percentage
+    fuel: fuelLiters, // Show fuel in liters, not percentage
     fuelLiters: fuelLiters, // Actual liters remaining
     battery: parseInt(position.attributes?.battery || '100'),
     temperature: Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25),
@@ -88,7 +89,8 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
     power: parseFloat(position.attributes?.power || '0'),
     rpm: parseInt(position.attributes?.rpm || '0'),
     engineHours: parseInt(position.attributes?.engineHours || '0'),
-    odometer: parseInt(position.attributes?.odometer || '0'),
+    odometer: totalOdometer,
+    todayOdometer: todayOdometer,
     signalType: position.protocol?.toLowerCase() === 'meitrack' ? 'WiFi' : 'GSM',
   };
 
@@ -229,8 +231,12 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
                 <span className="font-medium">{telemetry.rpm}</span>
               </div>
               <div className="flex items-center justify-between text-sm">
-                <span>Odometer</span>
+                <span>Total Odometer</span>
                 <span className="font-medium">{telemetry.odometer.toLocaleString()} km</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span>Today Odometer</span>
+                <span className="font-medium">{telemetry.todayOdometer.toLocaleString()} km</span>
               </div>
             </div>
 
@@ -260,9 +266,9 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
           <div className="grid grid-cols-4 gap-4">
             <CircularGauge
               value={telemetry.fuel}
-              max={100}
-              label="Fuel (360L)"
-              unit="%"
+              max={260}
+              label="Fuel (260L)"
+              unit="L"
               color="hsl(var(--fuel-medium))"
               icon={Fuel}
             />
@@ -296,10 +302,10 @@ const TelemetryPanel: React.FC<TelemetryPanelProps> = ({
           <div className="mt-4 space-y-2">
             <div>
               <div className="flex justify-between text-xs mb-1">
-                <span>Fuel Level (360L capacity)</span>
-                <span>{telemetry.fuel}% ({telemetry.fuelLiters}L)</span>
+                <span>Fuel Level (260L capacity)</span>
+                <span>{telemetry.fuel}L</span>
               </div>
-              <Progress value={telemetry.fuel} className="h-2" />
+              <Progress value={(telemetry.fuel / 260) * 100} className="h-2" />
             </div>
             
             <div>

@@ -145,17 +145,19 @@ const DeviceList: React.FC<DeviceListProps> = ({
     return value !== undefined ? String(value) : defaultValue;
   };
 
-  // Real fuel calculation for 360L capacity with odometer-based consumption
+  // Real fuel calculation for 260L capacity with TODAY'S odometer-based consumption only
   const getFuelData = (position: Position | undefined) => {
-    if (!position) return { liters: 360, odometer: 0 };
+    if (!position) return { liters: 260, odometer: 0, todayOdometer: 0 };
     
-    const odometerKm = parseInt(getAttributeValue(position, 'odometer', '0'));
-    const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
-    const actualLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
+    const totalOdometer = parseInt(getAttributeValue(position, 'odometer', '0'));
+    const todayOdometer = parseInt(getAttributeValue(position, 'todayOdometer', '0'));
+    const fuelUsed = Math.floor(todayOdometer / 8); // 8km per 1L (TODAY'S consumption only)
+    const actualLiters = Math.max(0, 260 - fuelUsed); // 260L capacity
     
     return {
       liters: actualLiters,
-      odometer: odometerKm
+      odometer: totalOdometer,
+      todayOdometer: todayOdometer
     };
   };
 

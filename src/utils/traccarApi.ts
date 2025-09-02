@@ -300,9 +300,9 @@ class TraccarAPI {
     return 'stopped';
   }
 
-  // Calculate fuel level based on TODAY'S odometer only (360L base, 1L = 8km)
+  // Calculate fuel level based on TODAY'S odometer only (260L base, 1L = 8km)
   private calculateFuelLevel(todayOdometer: number): number {
-    const baseFuel = 360; // 360L fuel tank capacity
+    const baseFuel = 260; // 260L fuel tank capacity
     const kmPerLiter = 8; // 1 liter = 8 km
     
     // Fuel consumption based ONLY on today's distance

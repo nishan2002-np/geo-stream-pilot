@@ -208,10 +208,11 @@ const MapView: React.FC<MapViewProps> = ({
     const statusColor = getStatusColor(device.status);
     const iconSize = selectedDeviceId === device.id ? 36 : 28;
     
-    // Real-time data from API with corrected fuel calculation
+    // Real-time data from API with corrected fuel calculation (260L capacity)
     const odometerKm = position.attributes?.odometer || 0;
-    const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
-    const fuelLevel = Math.max(0, 360 - fuelUsed); // 360L capacity
+    const todayOdometer = position.attributes?.todayOdometer || 0;
+    const fuelUsed = Math.floor(todayOdometer / 8); // 8km per 1L based on TODAY'S distance only
+    const fuelLevel = Math.max(0, 260 - fuelUsed); // 260L capacity
     const batteryLevel = parseInt(position.attributes?.battery || '100');
     const temperature = Math.round(position.attributes?.temp1 || position.attributes?.temperature || 25);
     const ignition = position.attributes?.ignition ? 'ON' : 'OFF';
@@ -328,47 +329,25 @@ const MapView: React.FC<MapViewProps> = ({
           animate={{ x: 0, opacity: 1 }}
           className="flex flex-col gap-2"
         >
-          {/* Style Toggle */}
-          <div className="flex gap-1 bg-card/80 backdrop-blur-sm rounded-lg p-1 border border-border/40">
+          {/* Single Map Style Toggle */}
+          <div className="relative">
             <Button
-              variant={mapStyle === 'dark' ? 'default' : 'ghost'}
+              variant="outline"
               size="sm"
-              onClick={() => setMapStyle('dark')}
-              className="h-8 w-8 p-0"
+              onClick={() => {
+                const styles: MapStyle[] = ['dark', 'google', 'satellite', 'hybrid'];
+                const currentIndex = styles.indexOf(mapStyle);
+                const nextIndex = (currentIndex + 1) % styles.length;
+                setMapStyle(styles[nextIndex]);
+              }}
+              className="bg-card/80 backdrop-blur-sm border border-border/40 px-3 py-2 h-auto"
             >
-              <MapPin className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={mapStyle === 'light' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('light')}
-              className="h-8 w-8 p-0"
-            >
-              <Layers className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={mapStyle === 'satellite' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('satellite')}
-              className="h-8 w-8 p-0"
-            >
-              <Satellite className="h-4 w-4" />
-            </Button>
-            <Button
-              variant={mapStyle === 'google' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('google')}
-              className="h-8 w-8 p-0"
-            >
-              🗺️
-            </Button>
-            <Button
-              variant={mapStyle === 'hybrid' ? 'default' : 'ghost'}
-              size="sm"
-              onClick={() => setMapStyle('hybrid')}
-              className="h-8 w-8 p-0"
-            >
-              🛰️
+              <div className="flex items-center gap-2">
+                {mapStyle === 'dark' && <><MapPin className="h-4 w-4" /> <span className="text-xs">OSM</span></>}
+                {mapStyle === 'google' && <>🗺️ <span className="text-xs">Google</span></>}
+                {mapStyle === 'satellite' && <><Satellite className="h-4 w-4" /> <span className="text-xs">Satellite</span></>}
+                {mapStyle === 'hybrid' && <>🛰️ <span className="text-xs">Hybrid</span></>}
+              </div>
             </Button>
           </div>
 
@@ -377,28 +356,29 @@ const MapView: React.FC<MapViewProps> = ({
             variant={showTrails ? 'default' : 'outline'}
             size="sm"
             onClick={() => setShowTrails(!showTrails)}
-            className="map-control"
+            className="bg-card/80 backdrop-blur-sm border border-border/40"
           >
             <Route className="h-4 w-4" />
           </Button>
 
-          {/* Zoom Controls */}
-          <div className="flex flex-col gap-1 bg-card/80 backdrop-blur-sm rounded-lg p-1 border border-border/40">
+          {/* Enhanced Zoom Controls */}
+          <div className="flex flex-col gap-1 bg-card/80 backdrop-blur-sm rounded-lg p-2 border border-border/40">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => mapRef.current?.zoomIn()}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 hover:bg-primary/20"
             >
-              <ZoomIn className="h-4 w-4" />
+              <ZoomIn className="h-5 w-5" />
             </Button>
+            <div className="w-full h-px bg-border/40 my-1"></div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => mapRef.current?.zoomOut()}
-              className="h-8 w-8 p-0"
+              className="h-10 w-10 p-0 hover:bg-primary/20"
             >
-              <ZoomOut className="h-4 w-4" />
+              <ZoomOut className="h-5 w-5" />
             </Button>
           </div>
 
@@ -407,7 +387,7 @@ const MapView: React.FC<MapViewProps> = ({
             variant="outline"
             size="sm"
             onClick={handleLocateUser}
-            className="map-control"
+            className="bg-card/80 backdrop-blur-sm border border-border/40"
           >
             <Locate className="h-4 w-4" />
           </Button>
@@ -428,46 +408,6 @@ const MapView: React.FC<MapViewProps> = ({
           />
         </div>
       )}
-
-      {/* Enhanced Legend with Device Status and Telemetry */}
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="absolute bottom-4 left-4 z-10 bg-card/80 backdrop-blur-sm rounded-lg p-3 border border-border/40 max-w-xs"
-      >
-        <h4 className="text-xs font-medium mb-2 text-muted-foreground">Device Status & Info</h4>
-        <div className="space-y-2 text-xs">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gps-moving"></div>
-              <span>Moving</span>
-            </div>
-            <span className="font-medium">{devices.filter(d => d.status === 'moving').length}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gps-idle"></div>
-              <span>Stopped/Idle</span>
-            </div>
-            <span className="font-medium">{devices.filter(d => d.status === 'stopped').length}</span>
-          </div>
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-gps-offline"></div>
-              <span>Offline</span>
-            </div>
-            <span className="font-medium">{devices.filter(d => d.status === 'offline').length}</span>
-          </div>
-          <div className="border-t border-border/20 pt-2 mt-2">
-            <div className="text-xs text-muted-foreground space-y-1">
-              <div>⛽ Fuel: 360L capacity (8km per 1L)</div>
-              <div>🌡️ Real-time temperature monitoring</div>
-              <div>📡 Live signal & battery monitoring</div>
-              <div>📍 GPS coordinates with full addresses</div>
-            </div>
-          </div>
-        </div>
-      </motion.div>
     </div>
   );
 };

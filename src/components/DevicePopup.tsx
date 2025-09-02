@@ -58,12 +58,12 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   const mediaInfo = resolveMediaUrl(position.attributes, position.id);
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
-  // Real fuel calculations based on TODAY'S odometer only (360L capacity)
+  // Real fuel calculations based on TODAY'S odometer only (260L capacity)
   const totalOdometerKm = position.attributes?.odometer || 0;
   const todayOdometerKm = position.attributes?.todayOdometer || 0;
   const fuelUsed = Math.floor(todayOdometerKm / 8); // 8km per 1L (TODAY'S consumption only)
-  const actualFuelLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
-  const fuelPercentage = (actualFuelLiters / 360) * 100;
+  const actualFuelLiters = Math.max(0, 260 - fuelUsed); // 260L capacity
+  const fuelPercentage = (actualFuelLiters / 260) * 100;
   const rangeKm = actualFuelLiters * 8; // 1 liter = 8 km
   
   const getFuelColor = (level: number) => {
@@ -112,7 +112,7 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
 
   const importantAttributes = {
     'Ignition': position.attributes?.ignition || position.attributes?.ignition === 'true' || position.attributes?.ignition === '1' ? '🟢 ON' : '🔴 OFF',
-    'Fuel Level': `${fuelPercentage}% (${actualFuelLiters}L)`,
+    'Fuel Level': `${actualFuelLiters}L`, // Show liters only, no percentage
     'Range': `${rangeKm} km remaining`,
     'Battery': `🔋 ${position.attributes?.battery || 100}%`,
     [`${signalInfo.type} Signal`]: `${signalInfo.icon} ${signalInfo.strength}%`,

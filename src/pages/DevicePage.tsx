@@ -155,8 +155,8 @@ const DevicePage = () => {
 
   const telemetry = {
     speed: position ? Math.round(position.speed) : 0,
-    fuel: position ? Math.round((360 - (position.attributes?.todayOdometer || 0) / 8)) : 360, // Fuel based on TODAY'S odometer
-    fuelPercentage: position ? Math.max(0, Math.min(100, ((360 - (position.attributes?.todayOdometer || 0) / 8) / 360) * 100)) : 100,
+    fuel: position ? Math.round((260 - (position.attributes?.todayOdometer || 0) / 8)) : 260, // Fuel based on TODAY'S odometer, 260L capacity
+    fuelPercentage: position ? Math.max(0, Math.min(100, ((260 - (position.attributes?.todayOdometer || 0) / 8) / 260) * 100)) : 100,
     battery: parseInt(position?.attributes?.battery || '100'),
     temperature: Math.round(position?.attributes?.temp1 || position?.attributes?.temperature || 25),
     gsm: parseInt(position?.attributes?.gsm || '95'),
@@ -313,7 +313,7 @@ const DevicePage = () => {
                     <div>
                       <div className="flex justify-between text-sm mb-2">
                         <span>Fuel Level</span>
-                        <span>{telemetry.fuel}L ({Math.round(telemetry.fuelPercentage)}%)</span>
+                        <span>{telemetry.fuel}L</span>
                       </div>
                       <Progress value={telemetry.fuelPercentage} className="h-3" />
                       <div className="text-xs text-muted-foreground mt-1">
