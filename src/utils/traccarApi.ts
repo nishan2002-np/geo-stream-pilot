@@ -300,16 +300,31 @@ class TraccarAPI {
     return 'stopped';
   }
 
-  // Calculate fuel level based on odometer (360L base, 1L = 8km) - Reset from 0
-  private calculateFuelLevel(odometer: number): number {
+  // Calculate fuel level based on TODAY'S odometer only (360L base, 1L = 8km)
+  private calculateFuelLevel(todayOdometer: number): number {
     const baseFuel = 360; // 360L fuel tank capacity
     const kmPerLiter = 8; // 1 liter = 8 km
     
-    // Start with fresh odometer from 0 - fuel consumption begins now
-    const consumedLiters = Math.floor(odometer / kmPerLiter);
+    // Fuel consumption based ONLY on today's distance
+    const consumedLiters = Math.floor(todayOdometer / kmPerLiter);
     const remainingLiters = Math.max(0, baseFuel - consumedLiters);
     
     return remainingLiters;
+  }
+
+  // Calculate today's odometer (resets daily at midnight)
+  private getTodayOdometer(baseValue: number): number {
+    const now = new Date();
+    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const minutesSinceStartOfDay = (now.getTime() - startOfDay.getTime()) / (1000 * 60);
+    
+    // Today's distance accumulates throughout the day (max ~100km per day)
+    return Math.floor((baseValue + minutesSinceStartOfDay) / 100);
+  }
+
+  // Calculate total odometer (keeps accumulating)
+  private getTotalOdometer(baseValue: number): number {
+    return Math.floor(baseValue);
   }
 
   // Mock data generators
@@ -430,7 +445,7 @@ class TraccarAPI {
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 100000 / 1000)), // Calculate based on reset odometer
+          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 100000 / 1000)), // Fuel based on TODAY'S odometer only
           battery: 95,
           gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
@@ -446,7 +461,8 @@ class TraccarAPI {
           power: 26.5,
           rpm: 2150,
           engineHours: 1245,
-          odometer: Math.floor(Date.now() % 100000 / 1000), // Reset odometer - starts from 0 and increments
+          odometer: this.getTotalOdometer(125430 + Date.now() % 100000 / 1000), // Total odometer (keeps accumulating)
+          todayOdometer: this.getTodayOdometer(Date.now() % 100000 / 1000), // Today's odometer (resets daily)
           image: 'snapshot_001.jpg',
           mediaId: 101,
           protocol: 'meitrack',
@@ -474,7 +490,7 @@ class TraccarAPI {
         accuracy: 2.8,
         attributes: {
           ignition: false,
-          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 80000 / 1200)), // Calculate based on reset odometer
+          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 80000 / 1200)), // Fuel based on TODAY'S odometer only
           battery: 78,
           gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
@@ -490,7 +506,8 @@ class TraccarAPI {
           power: 9.9,
           rpm: 0,
           engineHours: 987,
-          odometer: Math.floor(Date.now() % 80000 / 1200), // Reset odometer - starts from 0
+          odometer: this.getTotalOdometer(89432 + Date.now() % 80000 / 1200), // Total odometer (keeps accumulating)
+          todayOdometer: this.getTodayOdometer(Date.now() % 80000 / 1200), // Today's odometer (resets daily)
           image: 'snapshot_002.jpg',
           mediaId: 102,
           protocol: 'meitrack',
@@ -518,24 +535,25 @@ class TraccarAPI {
         accuracy: 4.1,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(Math.floor(Date.now() % 90000 / 1500)), // Calculate based on reset odometer
+          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 90000 / 1500)), // Fuel based on TODAY'S odometer only
           battery: 88,
           gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,
           io1: true,
           io2: false,
           io3: true,
-          io4: true,
-          adc1: 2.1,
-          adc2: 1.9,
-          temp1: 32.1 + (Math.random() * 4),
-          temp2: 35.6 + (Math.random() * 3),
-          voltage: 12.8,
-          current: 3.2,
+          io4: false,
+          adc1: 3.1,
+          adc2: 2.7,
+          temp1: 30.5 + (Math.random() * 8),
+          temp2: 28.9 + (Math.random() * 4),
+          voltage: 41.0,
+          current: 1.5,
           power: 41.0,
           rpm: 1890,
           engineHours: 2156,
-          odometer: Math.floor(Date.now() % 90000 / 1500), // Reset odometer - starts from 0
+          odometer: this.getTotalOdometer(234567 + Date.now() % 90000 / 1500), // Total odometer (keeps accumulating)
+          todayOdometer: this.getTodayOdometer(Date.now() % 90000 / 1500), // Today's odometer (resets daily)
           passengers: 45,
           maxPassengers: 60,
           doorOpen: false,

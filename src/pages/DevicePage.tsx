@@ -155,13 +155,15 @@ const DevicePage = () => {
 
   const telemetry = {
     speed: position ? Math.round(position.speed) : 0,
-    fuel: position ? Math.round((360 - (position.attributes?.odometer || 0) / 8)) : 360,
-    fuelPercentage: position ? Math.max(0, Math.min(100, ((360 - (position.attributes?.odometer || 0) / 8) / 360) * 100)) : 100,
+    fuel: position ? Math.round((360 - (position.attributes?.todayOdometer || 0) / 8)) : 360, // Fuel based on TODAY'S odometer
+    fuelPercentage: position ? Math.max(0, Math.min(100, ((360 - (position.attributes?.todayOdometer || 0) / 8) / 360) * 100)) : 100,
     battery: parseInt(position?.attributes?.battery || '100'),
     temperature: Math.round(position?.attributes?.temp1 || position?.attributes?.temperature || 25),
     gsm: parseInt(position?.attributes?.gsm || '95'),
     satellites: parseInt(position?.attributes?.satellites || '12'),
     ignition: position?.attributes?.ignition || false,
+    totalOdometer: position?.attributes?.odometer || 0,
+    todayOdometer: position?.attributes?.todayOdometer || 0,
   };
 
   return (
@@ -364,6 +366,14 @@ const DevicePage = () => {
                     <div className="flex justify-between">
                       <span className="text-muted-foreground">Protocol:</span>
                       <span>{position?.protocol || 'N/A'}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total Odometer:</span>
+                      <span>{telemetry.totalOdometer.toLocaleString()}km</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Today Odometer:</span>
+                      <span>{telemetry.todayOdometer.toLocaleString()}km</span>
                     </div>
                   </CardContent>
                 </Card>

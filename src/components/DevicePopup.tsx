@@ -58,9 +58,10 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
   const mediaInfo = resolveMediaUrl(position.attributes, position.id);
   const mockSnapshotUrl = getMockSnapshotUrl(device.id);
 
-  // Real fuel calculations with 360L capacity
-  const odometerKm = position.attributes?.odometer || 0;
-  const fuelUsed = Math.floor(odometerKm / 8); // 8km per 1L
+  // Real fuel calculations based on TODAY'S odometer only (360L capacity)
+  const totalOdometerKm = position.attributes?.odometer || 0;
+  const todayOdometerKm = position.attributes?.todayOdometer || 0;
+  const fuelUsed = Math.floor(todayOdometerKm / 8); // 8km per 1L (TODAY'S consumption only)
   const actualFuelLiters = Math.max(0, 360 - fuelUsed); // 360L capacity
   const fuelPercentage = (actualFuelLiters / 360) * 100;
   const rangeKm = actualFuelLiters * 8; // 1 liter = 8 km
@@ -121,7 +122,8 @@ const DevicePopup: React.FC<DevicePopupProps> = ({
     'Temperature 2': position.attributes?.temp2 ? `🌡️ ${Math.round(position.attributes.temp2)}°C` : '🌡️ 23°C',
     'Voltage': position.attributes?.voltage ? `⚡ ${position.attributes.voltage}V` : '⚡ 12.8V',
     'Engine Hours': position.attributes?.engineHours ? `⏱️ ${position.attributes.engineHours}h` : '⏱️ 1250h',
-    'Odometer': position.attributes?.odometer ? `📏 ${position.attributes.odometer.toLocaleString()}km` : '📏 125,450km',
+    'Total Odometer': totalOdometerKm ? `📏 ${totalOdometerKm.toLocaleString()}km` : '📏 125,450km',
+    'Today Odometer': todayOdometerKm ? `📅 ${todayOdometerKm.toLocaleString()}km` : '📅 0km',
     'Driver': position.attributes?.driverName || 'Ram Bahadur',
     'Protocol': position.protocol?.toUpperCase() || 'MEITRACK',
     'Phone Call': position.attributes?.phoneCall ? '📞 Active' : '📵 None',
