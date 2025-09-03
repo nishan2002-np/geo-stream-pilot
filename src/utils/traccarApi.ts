@@ -424,7 +424,7 @@ class TraccarAPI {
       const now = Date.now();
       const lastUpdate = parseInt(localStorage.getItem(lastUpdateKey) || now.toString());
       let todayOdometer = parseFloat(localStorage.getItem(todayOdometerKey) || '0');
-      let totalOdometer = parseFloat(localStorage.getItem(totalOdometerKey) || '0');
+      let totalOdometer = parseFloat(localStorage.getItem(totalOdometerKey) || (100000 + deviceId * 50000).toString());
       const lastResetDate = localStorage.getItem(lastResetDateKey) || new Date().toDateString();
       
       // Reset today's odometer if it's past 12pm and new day
@@ -440,9 +440,19 @@ class TraccarAPI {
         localStorage.setItem(lastResetDateKey, currentDateStr);
       }
       
-      // Ultra-sensitive distance tracking - even 1m movement shows
-      const timeDiff = Math.min((now - lastUpdate) / 1000, 30); // seconds, max 30s gap
-      const increment = speed > 0.5 ? Math.max(0.001, (speed * timeDiff) / 3600) : 0; // Even 0.5km/h shows, minimum 1m (0.001km)
+      // Ultra-sensitive real-time tracking - track every 1m movement
+      const timeDiff = Math.min((now - lastUpdate) / 1000, 10); // seconds, max 10s gap for real-time
+      
+      // ULTRA SENSITIVE - Even 0.1km/h shows and minimum 2m increment per update for moving vehicles
+      let increment = 0;
+      if (speed > 0) { // ANY movement at all
+        increment = Math.max(0.002, (speed * timeDiff) / 3600); // Minimum 2m (0.002km) per update
+        
+        // Extra increment for active testing vehicles to show clear movement
+        if (deviceId === 1 && speed > 10) {
+          increment = Math.max(increment, 0.005); // 5m minimum for fast moving vehicle
+        }
+      }
       
       // Update odometers
       todayOdometer += increment;
@@ -457,8 +467,8 @@ class TraccarAPI {
         latitude: basePos.lat + (Math.sin(timeOffset * Math.PI * 2) * movement),
         longitude: basePos.lng + (Math.cos(timeOffset * Math.PI * 2) * movement),
         speed: Math.max(0, speed + (Math.sin(timeOffset * Math.PI * 4) * 10)), // Dynamic speed
-        todayOdometer,
-        totalOdometer,
+        todayOdometer: Math.round(todayOdometer * 1000) / 1000, // Show 3 decimal places (1m precision)
+        totalOdometer: Math.round(totalOdometer * 1000) / 1000,
       };
     };
 
