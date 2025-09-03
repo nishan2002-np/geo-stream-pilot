@@ -427,16 +427,22 @@ class TraccarAPI {
       let totalOdometer = parseFloat(localStorage.getItem(totalOdometerKey) || '0');
       const lastResetDate = localStorage.getItem(lastResetDateKey) || new Date().toDateString();
       
-      // Reset today's odometer if it's a new day
-      const currentDate = new Date().toDateString();
-      if (lastResetDate !== currentDate) {
+      // Reset today's odometer if it's past 12pm and new day
+      const currentDate = new Date();
+      const currentDateStr = currentDate.toDateString();
+      const resetTime = new Date(currentDate);
+      resetTime.setHours(12, 0, 0, 0); // 12pm reset time
+      
+      const lastResetDateTime = new Date(lastResetDate + ' 12:00:00');
+      
+      if (currentDateStr !== lastResetDate || (currentDate >= resetTime && lastResetDateTime < resetTime)) {
         todayOdometer = 0;
-        localStorage.setItem(lastResetDateKey, currentDate);
+        localStorage.setItem(lastResetDateKey, currentDateStr);
       }
       
-      // Calculate distance increment based on time elapsed and speed - always accumulate for moving vehicles
-      const timeDiff = Math.min((now - lastUpdate) / 1000, 60); // seconds, max 1 minute gap
-      const increment = speed > 2 ? Math.max(0.01, (speed * timeDiff) / 3600) : 0; // km = (km/h * seconds) / 3600, minimum 0.01km
+      // Ultra-sensitive distance tracking - even 1m movement shows
+      const timeDiff = Math.min((now - lastUpdate) / 1000, 30); // seconds, max 30s gap
+      const increment = speed > 0.5 ? Math.max(0.001, (speed * timeDiff) / 3600) : 0; // Even 0.5km/h shows, minimum 1m (0.001km)
       
       // Update odometers
       todayOdometer += increment;

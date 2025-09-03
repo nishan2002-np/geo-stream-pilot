@@ -33,13 +33,14 @@ interface MapViewProps {
   alerts: Alert[];
 }
 
-type MapStyle = 'dark' | 'light' | 'satellite' | 'google' | 'hybrid';
+type MapStyle = 'dark' | 'light' | 'satellite' | 'google' | 'traffic' | 'hybrid';
 
 const MAP_STYLES = {
   dark: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
   light: 'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
   satellite: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-  google: 'https://mt1.google.com/vt/lyrs=r&x={x}&y={y}&z={z}',
+  google: 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', // Standard Google Maps
+  traffic: 'https://mt1.google.com/vt/lyrs=m,traffic&x={x}&y={y}&z={z}', // Google Maps with traffic
   hybrid: 'https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
 };
 
@@ -54,7 +55,7 @@ const MapView: React.FC<MapViewProps> = ({
   const mapContainer = useRef<HTMLDivElement>(null);
   const markersRef = useRef<Map<number, L.Marker>>(new Map());
   const trailsRef = useRef<Map<number, L.Polyline>>(new Map());
-  const [mapStyle, setMapStyle] = useState<MapStyle>('dark');
+  const [mapStyle, setMapStyle] = useState<MapStyle>('traffic');
   const [showTrails, setShowTrails] = useState(true);
   const [popupDevice, setPopupDevice] = useState<{ device: Device; position: Position } | null>(null);
 
@@ -333,7 +334,7 @@ const MapView: React.FC<MapViewProps> = ({
               variant="outline"
               size="sm"
               onClick={() => {
-                const styles: MapStyle[] = ['dark', 'google', 'satellite', 'hybrid'];
+                const styles: MapStyle[] = ['traffic', 'google', 'satellite', 'hybrid', 'dark'];
                 const currentIndex = styles.indexOf(mapStyle);
                 const nextIndex = (currentIndex + 1) % styles.length;
                 setMapStyle(styles[nextIndex]);
@@ -343,6 +344,7 @@ const MapView: React.FC<MapViewProps> = ({
               <div className="flex items-center gap-2">
                 {mapStyle === 'dark' && <><MapPin className="h-4 w-4" /> <span className="text-xs">OSM</span></>}
                 {mapStyle === 'google' && <>🗺️ <span className="text-xs">Google</span></>}
+                {mapStyle === 'traffic' && <>🚦 <span className="text-xs">Traffic</span></>}
                 {mapStyle === 'satellite' && <><Satellite className="h-4 w-4" /> <span className="text-xs">Satellite</span></>}
                 {mapStyle === 'hybrid' && <>🛰️ <span className="text-xs">Hybrid</span></>}
               </div>
