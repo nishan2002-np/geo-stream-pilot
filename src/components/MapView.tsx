@@ -228,25 +228,25 @@ const MapView: React.FC<MapViewProps> = ({
       html: `
         <div class="relative">
           <div class="flex flex-col items-center">
-            <div class="w-${Math.floor(iconSize/4)} h-${Math.floor(iconSize/4)} rounded-full border-2 border-white shadow-lg transform transition-all duration-300 ${
+            <div class="w-8 h-8 rounded-full border-2 border-white shadow-lg transform transition-all duration-300 ${
               selectedDeviceId === device.id ? 'scale-125' : ''
             }" style="background-color: ${statusColor};">
               ${getDeviceIcon(device.category || 'car')}
             </div>
-            <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
+            <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight whitespace-nowrap">
               <div>${device.name}</div>
             </div>
           </div>
           ${device.status === 'moving' ? `
-            <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-primary animate-pulse-gps"></div>
+            <div class="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-green-500 animate-pulse"></div>
           ` : ''}
           ${position.attributes?.phoneCall ? `
             <div class="absolute -top-2 -left-2 w-4 h-4 rounded-full bg-yellow-500 flex items-center justify-center text-xs animate-pulse">📞</div>
           ` : ''}
         </div>
       `,
-      iconSize: [iconSize + 20, iconSize + 30],
-      iconAnchor: [(iconSize + 20)/2, iconSize + 30],
+      iconSize: [120, 50],
+      iconAnchor: [60, 50],
     });
   };
 

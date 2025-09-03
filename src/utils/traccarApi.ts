@@ -434,9 +434,9 @@ class TraccarAPI {
         localStorage.setItem(lastResetDateKey, currentDate);
       }
       
-      // Calculate distance increment based on time elapsed and speed
-      const timeDiff = (now - lastUpdate) / 1000; // seconds
-      const increment = speed > 5 ? (speed * timeDiff) / 3600 : 0; // km = (km/h * seconds) / 3600
+      // Calculate distance increment based on time elapsed and speed - always accumulate for moving vehicles
+      const timeDiff = Math.min((now - lastUpdate) / 1000, 60); // seconds, max 1 minute gap
+      const increment = speed > 2 ? Math.max(0.01, (speed * timeDiff) / 3600) : 0; // km = (km/h * seconds) / 3600, minimum 0.01km
       
       // Update odometers
       todayOdometer += increment;
