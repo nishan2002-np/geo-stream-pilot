@@ -234,9 +234,7 @@ const MapView: React.FC<MapViewProps> = ({
               ${getDeviceIcon(device.category || 'car')}
             </div>
             <div class="mt-1 text-xs bg-black/80 text-white px-1 rounded text-center leading-tight">
-              <div>${statusText} • IGN ${ignition}</div>
-              <div>⛽${fuelLevel}L 🔋${batteryLevel}%</div>
-              <div>🌡️${temperature}°C ${position.protocol?.toLowerCase() === 'meitrack' ? '📶' : '📡'}${gsmSignal}%</div>
+              <div>${device.name}</div>
             </div>
           </div>
           ${device.status === 'moving' ? `

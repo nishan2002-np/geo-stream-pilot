@@ -410,15 +410,49 @@ class TraccarAPI {
   private getMockPositions(): Position[] {
     const baseTime = new Date();
     
-    // Generate dynamic data with real movement simulation
+    // Generate dynamic data with real movement simulation and real-time odometer
     const generateDynamicPosition = (deviceId: number, basePos: { lat: number; lng: number }, speed: number) => {
       const timeOffset = (Date.now() % 300000) / 300000; // 5-minute cycle
       const movement = 0.001 * timeOffset * (speed / 50); // Scale movement by speed
+      
+      // Real-time odometer tracking
+      const lastUpdateKey = `lastUpdate_${deviceId}`;
+      const todayOdometerKey = `todayOdometer_${deviceId}`;
+      const totalOdometerKey = `totalOdometer_${deviceId}`;
+      const lastResetDateKey = `lastResetDate_${deviceId}`;
+      
+      const now = Date.now();
+      const lastUpdate = parseInt(localStorage.getItem(lastUpdateKey) || now.toString());
+      let todayOdometer = parseFloat(localStorage.getItem(todayOdometerKey) || '0');
+      let totalOdometer = parseFloat(localStorage.getItem(totalOdometerKey) || '0');
+      const lastResetDate = localStorage.getItem(lastResetDateKey) || new Date().toDateString();
+      
+      // Reset today's odometer if it's a new day
+      const currentDate = new Date().toDateString();
+      if (lastResetDate !== currentDate) {
+        todayOdometer = 0;
+        localStorage.setItem(lastResetDateKey, currentDate);
+      }
+      
+      // Calculate distance increment based on time elapsed and speed
+      const timeDiff = (now - lastUpdate) / 1000; // seconds
+      const increment = speed > 5 ? (speed * timeDiff) / 3600 : 0; // km = (km/h * seconds) / 3600
+      
+      // Update odometers
+      todayOdometer += increment;
+      totalOdometer += increment;
+      
+      // Save updated values
+      localStorage.setItem(lastUpdateKey, now.toString());
+      localStorage.setItem(todayOdometerKey, todayOdometer.toString());
+      localStorage.setItem(totalOdometerKey, totalOdometer.toString());
       
       return {
         latitude: basePos.lat + (Math.sin(timeOffset * Math.PI * 2) * movement),
         longitude: basePos.lng + (Math.cos(timeOffset * Math.PI * 2) * movement),
         speed: Math.max(0, speed + (Math.sin(timeOffset * Math.PI * 4) * 10)), // Dynamic speed
+        todayOdometer,
+        totalOdometer,
       };
     };
 
@@ -445,7 +479,7 @@ class TraccarAPI {
         accuracy: 3.2,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 100000 / 1000)), // Fuel based on TODAY'S odometer only
+          fuel: this.calculateFuelLevel(vehicle1.todayOdometer), // Fuel based on TODAY'S odometer only
           battery: 95,
           gsm: 85 + Math.round(Math.random() * 10), // Dynamic signal
           satellites: 12,
@@ -461,8 +495,8 @@ class TraccarAPI {
           power: 26.5,
           rpm: 2150,
           engineHours: 1245,
-          odometer: this.getTotalOdometer(125430 + Date.now() % 100000 / 1000), // Total odometer (keeps accumulating)
-          todayOdometer: this.getTodayOdometer(Date.now() % 100000 / 1000), // Today's odometer (resets daily)
+          odometer: vehicle1.totalOdometer, // Total odometer (keeps accumulating)
+          todayOdometer: vehicle1.todayOdometer, // Today's odometer (resets daily)
           image: 'snapshot_001.jpg',
           mediaId: 101,
           protocol: 'meitrack',
@@ -490,7 +524,7 @@ class TraccarAPI {
         accuracy: 2.8,
         attributes: {
           ignition: false,
-          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 80000 / 1200)), // Fuel based on TODAY'S odometer only
+          fuel: this.calculateFuelLevel(vehicle2.todayOdometer), // Fuel based on TODAY'S odometer only
           battery: 78,
           gsm: 92 + Math.round(Math.random() * 8), // Dynamic WiFi signal for Meitrack
           satellites: 8,
@@ -506,8 +540,8 @@ class TraccarAPI {
           power: 9.9,
           rpm: 0,
           engineHours: 987,
-          odometer: this.getTotalOdometer(89432 + Date.now() % 80000 / 1200), // Total odometer (keeps accumulating)
-          todayOdometer: this.getTodayOdometer(Date.now() % 80000 / 1200), // Today's odometer (resets daily)
+          odometer: vehicle2.totalOdometer, // Total odometer (keeps accumulating)
+          todayOdometer: vehicle2.todayOdometer, // Today's odometer (resets daily)
           image: 'snapshot_002.jpg',
           mediaId: 102,
           protocol: 'meitrack',
@@ -535,7 +569,7 @@ class TraccarAPI {
         accuracy: 4.1,
         attributes: {
           ignition: true,
-          fuel: this.calculateFuelLevel(this.getTodayOdometer(Date.now() % 90000 / 1500)), // Fuel based on TODAY'S odometer only
+          fuel: this.calculateFuelLevel(vehicle3.todayOdometer), // Fuel based on TODAY'S odometer only
           battery: 88,
           gsm: 78 + Math.round(Math.random() * 12), // Dynamic signal
           satellites: 10,
@@ -552,8 +586,8 @@ class TraccarAPI {
           power: 41.0,
           rpm: 1890,
           engineHours: 2156,
-          odometer: this.getTotalOdometer(234567 + Date.now() % 90000 / 1500), // Total odometer (keeps accumulating)
-          todayOdometer: this.getTodayOdometer(Date.now() % 90000 / 1500), // Today's odometer (resets daily)
+          odometer: vehicle3.totalOdometer, // Total odometer (keeps accumulating)
+          todayOdometer: vehicle3.todayOdometer, // Today's odometer (resets daily)
           passengers: 45,
           maxPassengers: 60,
           doorOpen: false,
