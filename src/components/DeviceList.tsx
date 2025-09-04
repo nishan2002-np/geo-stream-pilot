@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -317,14 +318,15 @@ const DeviceList: React.FC<DeviceListProps> = ({
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <Card
-                      className={`cursor-pointer transition-all duration-200 hover:shadow-lg border ${
-                        isSelected
-                          ? 'ring-2 ring-primary bg-primary/5 border-primary'
-                          : 'border-border/40 hover:border-primary/40'
-                      }`}
-                      onClick={() => onDeviceSelect(device.id)}
-                    >
+                    <Link to={`/vehicle/${device.id}`} key={device.id}>
+                      <Card
+                        className={`cursor-pointer transition-all duration-200 hover:shadow-lg border ${
+                          isSelected
+                            ? 'ring-2 ring-primary bg-primary/5 border-primary'
+                            : 'border-border/40 hover:border-primary/40'
+                        }`}
+                        onClick={() => onDeviceSelect(device.id)}
+                      >
                       <CardContent className="p-3">
                         <div className="flex items-start justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -418,6 +420,7 @@ const DeviceList: React.FC<DeviceListProps> = ({
                         </div>
                       </CardContent>
                     </Card>
+                  </Link>
                   </motion.div>
                 );
               })

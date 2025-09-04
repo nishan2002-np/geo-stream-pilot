@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import MapView from '@/components/MapView';
 import DeviceList from '@/components/DeviceList';
 import AlertsPanel from '@/components/AlertsPanel';
@@ -17,7 +18,8 @@ import {
   Navigation, 
   Activity,
   Zap,
-  AlertTriangle
+  AlertTriangle,
+  MapPin
 } from 'lucide-react';
 import traccarApi from '@/utils/traccarApi';
 import { Device, Position } from '@/types/tracking';
@@ -233,6 +235,12 @@ const Dashboard = () => {
           </div>
 
           <div className="flex items-center gap-4">
+            <Link to="/vehicle/1">
+              <Button variant="outline" size="sm">
+                <MapPin className="h-4 w-4 mr-2" />
+                View Vehicle Details
+              </Button>
+            </Link>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
