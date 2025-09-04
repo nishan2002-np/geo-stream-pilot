@@ -1,11 +1,12 @@
-import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import {
   PieChart,
   Pie,
@@ -37,6 +38,12 @@ import {
   RotateCcw,
   Maximize2,
   Thermometer,
+  AlertTriangle,
+  TrendingDown,
+  RotateCcw as TurnLeft,
+  RotateCw as TurnRight,
+  UserX,
+  Bell,
 } from 'lucide-react';
 import { Device, Position } from '@/types/tracking';
 import traccarApi from '@/utils/traccarApi';
@@ -57,8 +64,16 @@ const VehicleDetails = () => {
   const [loading, setLoading] = useState(true);
   const [showCameraFeed, setShowCameraFeed] = useState(false);
   const [showDrivingBehavior, setShowDrivingBehavior] = useState(true);
+  
+  // Alert states
+  const [alerts, setAlerts] = useState<any[]>([]);
+  const [lastPosition, setLastPosition] = useState<Position | null>(null);
+  const [lastSpeed, setLastSpeed] = useState<number>(0);
+  const [lastCourse, setLastCourse] = useState<number>(0);
+  const [stopStartTime, setStopStartTime] = useState<Date | null>(null);
+  const alertCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
-  // Load data
+  // Load data and setup real-time monitoring
   useEffect(() => {
     const loadData = async () => {
       try {
@@ -76,6 +91,17 @@ const VehicleDetails = () => {
           const position = positionsData.find(p => p.deviceId === deviceId);
           setSelectedDevice(device || null);
           setSelectedPosition(position || null);
+          
+          if (position) {
+            setLastPosition(position);
+            setLastSpeed(position.speed);
+            setLastCourse(position.course);
+            
+            // Initialize stop time if vehicle is stopped
+            if (position.speed === 0) {
+              setStopStartTime(new Date(position.deviceTime));
+            }
+          }
         }
       } catch (error) {
         console.error('Failed to load data:', error);
@@ -85,16 +111,144 @@ const VehicleDetails = () => {
     };
 
     loadData();
+    
+    // Setup WebSocket for real-time updates
+    traccarApi.connectWebSocket((data) => {
+      if (data.devices) setDevices(data.devices);
+      if (data.positions) {
+        setPositions(data.positions);
+        
+        // Update selected position if it's for current device
+        if (deviceId) {
+          const updatedPosition = data.positions.find(p => p.deviceId === deviceId);
+          if (updatedPosition) {
+            checkForAlerts(updatedPosition);
+            setSelectedPosition(updatedPosition);
+          }
+        }
+      }
+    });
+
+    return () => {
+      traccarApi.disconnectWebSocket();
+      if (alertCheckInterval.current) {
+        clearInterval(alertCheckInterval.current);
+      }
+    };
   }, [deviceId]);
 
-  // Generate fuel chart data
+  // Check for various alerts
+  const checkForAlerts = (newPosition: Position) => {
+    if (!lastPosition) {
+      setLastPosition(newPosition);
+      setLastSpeed(newPosition.speed);
+      setLastCourse(newPosition.course);
+      return;
+    }
+
+    const now = new Date();
+    const newAlerts: any[] = [];
+
+    // 1. Harsh Braking Alert (speed drop > 10 km/h)
+    if (lastSpeed > 10 && newPosition.speed < lastSpeed - 10) {
+      newAlerts.push({
+        id: `harsh-brake-${Date.now()}`,
+        type: 'harsh-braking',
+        severity: 'high',
+        title: 'Harsh Braking Detected',
+        message: `Speed dropped from ${Math.round(lastSpeed)} to ${Math.round(newPosition.speed)} km/h`,
+        timestamp: now,
+        icon: TrendingDown,
+        color: 'text-red-500',
+      });
+    }
+
+    // 2. Sharp Turn Detection (course change > 45 degrees)
+    const courseChange = Math.abs(newPosition.course - lastCourse);
+    const normalizedCourseChange = courseChange > 180 ? 360 - courseChange : courseChange;
+    
+    if (normalizedCourseChange > 45 && newPosition.speed > 5) {
+      const turnDirection = ((newPosition.course - lastCourse + 360) % 360) > 180 ? 'left' : 'right';
+      newAlerts.push({
+        id: `sharp-turn-${Date.now()}`,
+        type: 'sharp-turn',
+        severity: 'medium',
+        title: `Sharp ${turnDirection.charAt(0).toUpperCase() + turnDirection.slice(1)} Turn`,
+        message: `${Math.round(normalizedCourseChange)}° turn at ${Math.round(newPosition.speed)} km/h`,
+        timestamp: now,
+        icon: turnDirection === 'left' ? TurnLeft : TurnRight,
+        color: 'text-yellow-500',
+      });
+    }
+
+    // 3. Driver Missing Alert (stopped > 2 minutes)
+    if (newPosition.speed === 0) {
+      if (!stopStartTime) {
+        setStopStartTime(new Date(newPosition.deviceTime));
+      } else {
+        const stopDuration = (new Date(newPosition.deviceTime).getTime() - stopStartTime.getTime()) / 1000 / 60;
+        if (stopDuration > 2) {
+          newAlerts.push({
+            id: `driver-missing-${Date.now()}`,
+            type: 'driver-missing',
+            severity: 'high',
+            title: 'Driver Missing Alert',
+            message: `Vehicle stopped for ${Math.round(stopDuration)} minutes`,
+            timestamp: now,
+            icon: UserX,
+            color: 'text-red-600',
+          });
+        }
+      }
+    } else {
+      setStopStartTime(null); // Reset if vehicle is moving
+    }
+
+    // Add new alerts
+    if (newAlerts.length > 0) {
+      setAlerts(prev => [...newAlerts, ...prev].slice(0, 10)); // Keep last 10 alerts
+    }
+
+    // Update last position data
+    setLastPosition(newPosition);
+    setLastSpeed(newPosition.speed);
+    setLastCourse(newPosition.course);
+  };
+
+  // Auto-dismiss alerts after 30 seconds
+  useEffect(() => {
+    if (alerts.length > 0) {
+      const timer = setTimeout(() => {
+        setAlerts(prev => prev.slice(0, -1));
+      }, 30000);
+      return () => clearTimeout(timer);
+    }
+  }, [alerts]);
+
+  // Real vehicle data calculations
+  const realVehicleData = selectedPosition ? {
+    currentSpeed: Math.round(selectedPosition.speed),
+    todayOdometer: selectedPosition.attributes?.todayOdometer || 0,
+    totalOdometer: selectedPosition.attributes?.odometer || 0,
+    fuelUsed: Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 8), // 8km per liter
+    fuelRemaining: Math.max(0, 260 - Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 8)),
+    batteryLevel: parseInt(selectedPosition.attributes?.battery || '100'),
+    temperature: Math.round(selectedPosition.attributes?.temp1 || 25),
+    signalStrength: parseInt(selectedPosition.attributes?.gsm || '95'),
+    lastUpdate: selectedPosition.deviceTime,
+    ignition: selectedPosition.attributes?.ignition || false,
+    course: Math.round(selectedPosition.course),
+    address: selectedPosition.address || 'Loading address...'
+  } : null;
+
+  // Generate fuel chart data based on real today's odometer
   const fuelChartData = [];
   const now = new Date();
   for (let i = 11; i >= 0; i--) {
     const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const todayOdo = selectedPosition?.attributes?.todayOdometer || 0;
-    const fuelUsed = Math.floor(todayOdo / 8) + (Math.random() - 0.5) * 10;
-    const fuelLevel = Math.max(10, 260 - fuelUsed);
+    const baseFuel = realVehicleData?.fuelRemaining || 260;
+    const variation = (Math.random() - 0.5) * 20;
+    const fuelLevel = Math.max(10, baseFuel + variation);
     fuelChartData.push({
       time: dayjs(timestamp).format('HH:mm'),
       fuel: ((fuelLevel / 260) * 100),
@@ -184,6 +338,43 @@ const VehicleDetails = () => {
         </div>
       </motion.header>
 
+      {/* Alert Notifications */}
+      <AnimatePresence>
+        {alerts.map((alert, index) => (
+          <motion.div
+            key={alert.id}
+            initial={{ x: 300, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 300, opacity: 0 }}
+            className={`fixed top-20 right-4 z-50`}
+            style={{ top: `${80 + index * 80}px` }}
+          >
+            <Alert className="w-80 bg-card border-l-4 border-l-red-500 shadow-lg">
+              <div className="flex items-center gap-3">
+                <alert.icon className={`h-5 w-5 ${alert.color}`} />
+                <div className="flex-1">
+                  <div className="font-semibold text-sm">{alert.title}</div>
+                  <AlertDescription className="text-xs">
+                    {alert.message}
+                  </AlertDescription>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {dayjs(alert.timestamp).format('HH:mm:ss')}
+                  </div>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setAlerts(prev => prev.filter(a => a.id !== alert.id))}
+                  className="h-6 w-6 p-0"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
+              </div>
+            </Alert>
+          </motion.div>
+        ))}
+      </AnimatePresence>
+
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Vehicle Details */}
@@ -196,15 +387,27 @@ const VehicleDetails = () => {
             {/* Vehicle Header */}
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 bg-green-500 rounded-full flex items-center justify-center">
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
+                  selectedDevice?.status === 'moving' ? 'bg-green-500' :
+                  selectedDevice?.status === 'stopped' ? 'bg-yellow-500' :
+                  'bg-red-500'
+                }`}>
                   <div className="w-2 h-2 bg-white rounded-full"></div>
                 </div>
-                <h2 className="font-bold text-lg">{selectedDevice?.name || 'SSFG.456'}</h2>
+                <h2 className="font-bold text-lg">{selectedDevice?.name || 'Loading...'}</h2>
+                <Badge className="text-xs">
+                  {selectedDevice?.status || 'unknown'}
+                </Badge>
               </div>
-              <div className="flex gap-1">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                <div className="w-2 h-2 bg-orange-400 rounded-full"></div>
+              <div className="flex items-center gap-2">
+                <Badge variant="outline" className="text-xs">
+                  Today: {realVehicleData?.todayOdometer.toFixed(3) || '0.000'} km
+                </Badge>
+                <div className="flex gap-1">
+                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.ignition ? 'bg-green-400' : 'bg-red-400'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.batteryLevel > 50 ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
+                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.signalStrength > 70 ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+                </div>
               </div>
             </div>
 
@@ -216,20 +419,23 @@ const VehicleDetails = () => {
                   <div className="flex items-start gap-2">
                     <div className="w-3 h-3 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
                     <div className="flex-1">
-                      <div className="text-xs text-muted-foreground">Address</div>
+                      <div className="text-xs text-muted-foreground">Current Address</div>
                       <div className="text-sm font-medium">
-                        {selectedPosition?.address || '102 Sherbrooke Rd, 4110 Brisbane City, Queensland, Australia'}
+                        {realVehicleData?.address}
+                      </div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        {selectedPosition?.latitude.toFixed(6)}, {selectedPosition?.longitude.toFixed(6)}
                       </div>
                     </div>
                   </div>
                   
-                  {/* Destination */}
+                  {/* Speed & Course */}
                   <div className="flex items-start gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full mt-1 flex-shrink-0"></div>
+                    <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
                     <div className="flex-1">
-                      <div className="text-xs text-muted-foreground">Destination</div>
+                      <div className="text-xs text-muted-foreground">Speed & Direction</div>
                       <div className="text-sm font-medium">
-                        240 Sherbrooke Rd, 4110 Brisbane City, Queensland, Australia
+                        {realVehicleData?.currentSpeed} km/h → {realVehicleData?.course}°
                       </div>
                     </div>
                   </div>
@@ -237,34 +443,66 @@ const VehicleDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Last Packet Info */}
+            {/* Last Packet & Today's Odometer */}
             <Card className="mb-4">
               <CardContent className="p-3">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Last Packet</span>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className={`w-3 h-3 rounded-full ${selectedDevice?.status === 'moving' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+                      <span className="text-sm font-medium">Last Packet</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {dayjs(realVehicleData?.lastUpdate || new Date()).format('DD/MM/YYYY - HH:mm:ss')}
+                    </div>
                   </div>
-                  <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {dayjs(selectedPosition?.deviceTime || new Date()).format('DD/MM/YYYY - HH:mm:ss')}
+                  
+                  <div className="border-t pt-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium text-primary">Today's Odometer</span>
+                      <span className="text-lg font-bold text-primary">
+                        {realVehicleData?.todayOdometer.toFixed(3) || '0.000'} km
+                      </span>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Total: {realVehicleData?.totalOdometer.toLocaleString() || '0'} km
+                    </div>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Speed Info */}
+            {/* Live Vehicle Stats */}
             <Card className="mb-4">
               <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Gauge className="h-4 w-4 text-primary" />
-                    <span className="text-sm font-medium">Speed</span>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Gauge className="h-4 w-4 text-primary" />
+                      <span className="text-sm font-medium">Speed</span>
+                    </div>
+                    <span className={`text-sm font-medium ${realVehicleData?.currentSpeed > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
+                      {realVehicleData?.currentSpeed || 0} km/h
+                    </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Navigation className="h-3 w-3 text-muted-foreground" />
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Fuel className="h-4 w-4 text-blue-500" />
+                      <span className="text-sm font-medium">Fuel</span>
+                    </div>
                     <span className="text-sm font-medium">
-                      {Math.round(selectedPosition?.speed || 0)} km/h
+                      {realVehicleData?.fuelRemaining || 260}L / 260L
+                    </span>
+                  </div>
+                  
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Battery className="h-4 w-4 text-green-500" />
+                      <span className="text-sm font-medium">Battery</span>
+                    </div>
+                    <span className="text-sm font-medium">
+                      {realVehicleData?.batteryLevel || 100}%
                     </span>
                   </div>
                 </div>
