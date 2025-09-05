@@ -71,6 +71,7 @@ const VehicleDetails = () => {
   const [lastSpeed, setLastSpeed] = useState<number>(0);
   const [lastCourse, setLastCourse] = useState<number>(0);
   const [stopStartTime, setStopStartTime] = useState<Date | null>(null);
+  const [drivingEvents, setDrivingEvents] = useState<any[]>([]); // Track all driving events
   const alertCheckInterval = useRef<NodeJS.Timeout | null>(null);
 
   // Load data and setup real-time monitoring
@@ -171,9 +172,9 @@ const VehicleDetails = () => {
       const turnDirection = ((newPosition.course - lastCourse + 360) % 360) > 180 ? 'left' : 'right';
       newAlerts.push({
         id: `sharp-turn-${Date.now()}`,
-        type: 'sharp-turn',
+        type: 'harsh-cornering',
         severity: 'medium',
-        title: `Sharp ${turnDirection.charAt(0).toUpperCase() + turnDirection.slice(1)} Turn`,
+        title: `Harsh ${turnDirection.charAt(0).toUpperCase() + turnDirection.slice(1)} Cornering`,
         message: `${Math.round(normalizedCourseChange)}° turn at ${Math.round(newPosition.speed)} km/h`,
         timestamp: now,
         icon: turnDirection === 'left' ? TurnLeft : TurnRight,
@@ -181,7 +182,21 @@ const VehicleDetails = () => {
       });
     }
 
-    // 3. Driver Missing Alert (stopped > 2 minutes)
+    // 3. Harsh Acceleration Alert (speed increase > 20 km/h)
+    if (newPosition.speed > lastSpeed + 20) {
+      newAlerts.push({
+        id: `harsh-acceleration-${Date.now()}`,
+        type: 'harsh-acceleration',
+        severity: 'medium',
+        title: 'Harsh Acceleration Detected',
+        message: `Speed increased from ${Math.round(lastSpeed)} to ${Math.round(newPosition.speed)} km/h`,
+        timestamp: now,
+        icon: Activity,
+        color: 'text-orange-500',
+      });
+    }
+
+    // 4. Driver Missing Alert (stopped > 2 minutes)
     if (newPosition.speed === 0) {
       if (!stopStartTime) {
         setStopStartTime(new Date(newPosition.deviceTime));
@@ -204,9 +219,10 @@ const VehicleDetails = () => {
       setStopStartTime(null); // Reset if vehicle is moving
     }
 
-    // Add new alerts
+    // Add new alerts and track events
     if (newAlerts.length > 0) {
       setAlerts(prev => [...newAlerts, ...prev].slice(0, 10)); // Keep last 10 alerts
+      setDrivingEvents(prev => [...newAlerts, ...prev].slice(0, 50)); // Keep last 50 events for analysis
     }
 
     // Update last position data
@@ -229,9 +245,9 @@ const VehicleDetails = () => {
   const realVehicleData = selectedPosition ? {
     currentSpeed: Math.round(selectedPosition.speed),
     todayOdometer: selectedPosition.attributes?.todayOdometer || 0,
-    totalOdometer: selectedPosition.attributes?.odometer || 0,
-    fuelUsed: Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 8), // 8km per liter
-    fuelRemaining: Math.max(0, 260 - Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 8)),
+    totalOdometer: selectedPosition.attributes?.totalOdometer || selectedPosition.attributes?.odometer || 0,
+    fuelUsed: Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 2), // 2km per liter (1L = 2km)
+    fuelRemaining: Math.max(0, 260 - Math.floor((selectedPosition.attributes?.todayOdometer || 0) / 2)),
     batteryLevel: parseInt(selectedPosition.attributes?.battery || '100'),
     temperature: Math.round(selectedPosition.attributes?.temp1 || 25),
     signalStrength: parseInt(selectedPosition.attributes?.gsm || '95'),
@@ -240,6 +256,16 @@ const VehicleDetails = () => {
     course: Math.round(selectedPosition.course),
     address: selectedPosition.address || 'Loading address...'
   } : null;
+
+  // Calculate real dashboard statistics from devices
+  const dashboardStats = {
+    all: devices.length,
+    running: devices.filter(d => d.status === 'moving').length,
+    stopped: devices.filter(d => d.status === 'stopped').length,
+    offline: devices.filter(d => d.status === 'offline').length,
+    idle: devices.filter(d => d.status === 'unknown').length,
+    unreachable: devices.filter(d => d.status === 'offline').length
+  };
 
   // Generate fuel chart data based on real today's odometer
   const fuelChartData = [];
@@ -255,13 +281,119 @@ const VehicleDetails = () => {
     });
   }
 
-  // Generate driving behavior data
-  const drivingBehaviorData = [
-    { name: 'Harsh Cornering', value: 23.3, color: '#ff6b6b' },
-    { name: 'Harsh Braking', value: 27.8, color: '#4ecdc4' },
-    { name: 'Harsh Acceleration', value: 30.2, color: '#45b7d1' },
-    { name: 'Normal Driving', value: 18.7, color: '#96ceb4' },
-  ];
+  // Generate driving behavior data based on real events
+  const drivingBehaviorData = (() => {
+    const eventCounts = {
+      'harsh-cornering': drivingEvents.filter(e => e.type === 'harsh-cornering').length,
+      'harsh-braking': drivingEvents.filter(e => e.type === 'harsh-braking').length,
+      'harsh-acceleration': drivingEvents.filter(e => e.type === 'harsh-acceleration').length,
+      'driver-missing': drivingEvents.filter(e => e.type === 'driver-missing').length
+    };
+    
+    const totalEvents = Object.values(eventCounts).reduce((a, b) => a + b, 0);
+    const normalDriving = Math.max(0, 100 - totalEvents * 2); // Each event reduces normal driving by 2%
+    
+    return [
+      { 
+        name: 'Harsh Cornering', 
+        value: totalEvents > 0 ? Math.round((eventCounts['harsh-cornering'] / totalEvents) * (100 - normalDriving)) : 0, 
+        color: '#ff6b6b',
+        count: eventCounts['harsh-cornering']
+      },
+      { 
+        name: 'Harsh Braking', 
+        value: totalEvents > 0 ? Math.round((eventCounts['harsh-braking'] / totalEvents) * (100 - normalDriving)) : 0, 
+        color: '#4ecdc4',
+        count: eventCounts['harsh-braking']
+      },
+      { 
+        name: 'Harsh Acceleration', 
+        value: totalEvents > 0 ? Math.round((eventCounts['harsh-acceleration'] / totalEvents) * (100 - normalDriving)) : 0, 
+        color: '#45b7d1',
+        count: eventCounts['harsh-acceleration']
+      },
+      { 
+        name: 'Normal Driving', 
+        value: Math.round(normalDriving), 
+        color: '#96ceb4',
+        count: 0
+      },
+    ];
+  })();
+
+  // Generate driving events chart data
+  const drivingEventsChartData = [];
+  const currentTime = new Date();
+  for (let i = 11; i >= 0; i--) {
+    const timestamp = new Date(currentTime.getTime() - i * 60 * 60 * 1000);
+    const hourEvents = drivingEvents.filter(event => {
+      const eventTime = new Date(event.timestamp);
+      return eventTime >= new Date(timestamp.getTime() - 30 * 60 * 1000) && eventTime < new Date(timestamp.getTime() + 30 * 60 * 1000);
+    });
+    
+    drivingEventsChartData.push({
+      time: dayjs(timestamp).format('HH:mm'),
+      events: hourEvents.length,
+      harshBraking: hourEvents.filter(e => e.type === 'harsh-braking').length,
+      harshCornering: hourEvents.filter(e => e.type === 'harsh-cornering').length,
+      harshAcceleration: hourEvents.filter(e => e.type === 'harsh-acceleration').length,
+    });
+  }
+
+  // AI Driving Analysis
+  const generateAIAnalysis = () => {
+    const totalEvents = drivingEvents.length;
+    const harshBrakingCount = drivingEvents.filter(e => e.type === 'harsh-braking').length;
+    const harshCorneringCount = drivingEvents.filter(e => e.type === 'harsh-cornering').length; 
+    const harshAccelerationCount = drivingEvents.filter(e => e.type === 'harsh-acceleration').length;
+    const driverMissingCount = drivingEvents.filter(e => e.type === 'driver-missing').length;
+
+    let drivingScore = 100;
+    let analysis = [];
+    let recommendations = [];
+
+    // Calculate driving score
+    drivingScore -= harshBrakingCount * 5; // -5 points per harsh braking
+    drivingScore -= harshCorneringCount * 4; // -4 points per harsh cornering
+    drivingScore -= harshAccelerationCount * 3; // -3 points per harsh acceleration
+    drivingScore -= driverMissingCount * 2; // -2 points per driver missing
+    drivingScore = Math.max(0, Math.min(100, drivingScore));
+
+    // Generate analysis
+    if (drivingScore >= 90) {
+      analysis.push("🟢 Excellent driving behavior detected");
+      recommendations.push("Continue maintaining safe driving practices");
+    } else if (drivingScore >= 75) {
+      analysis.push("🟡 Good driving with room for improvement");
+      recommendations.push("Focus on smoother acceleration and braking");
+    } else if (drivingScore >= 60) {
+      analysis.push("🟠 Average driving behavior with safety concerns");
+      recommendations.push("Consider driver training for safer habits");
+    } else {
+      analysis.push("🔴 Poor driving behavior - immediate attention required");
+      recommendations.push("Urgent driver coaching needed for safety");
+    }
+
+    // Specific behavior analysis
+    if (harshBrakingCount > 5) {
+      analysis.push(`⚠️ Frequent harsh braking detected (${harshBrakingCount} events)`);
+      recommendations.push("Maintain safe following distance and anticipate traffic");
+    }
+    
+    if (harshCorneringCount > 3) {
+      analysis.push(`⚠️ Aggressive cornering behavior (${harshCorneringCount} events)`);
+      recommendations.push("Reduce speed when turning and follow proper cornering techniques");
+    }
+
+    if (harshAccelerationCount > 3) {
+      analysis.push(`⚠️ Excessive acceleration detected (${harshAccelerationCount} events)`);
+      recommendations.push("Practice gradual acceleration to improve fuel efficiency");
+    }
+
+    return { drivingScore, analysis, recommendations };
+  };
+
+  const aiAnalysis = generateAIAnalysis();
 
   const totalTrips = 1543;
   const totalDistance = `${totalTrips} km`;
@@ -317,22 +449,19 @@ const VehicleDetails = () => {
           {/* Status Badges */}
           <div className="flex items-center gap-2">
             <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
-              210 All
+              {dashboardStats.all} All
             </Badge>
             <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
-              150 Running
+              {dashboardStats.running} Moving
             </Badge>
             <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30">
-              20 Stopped
+              {dashboardStats.stopped} Stopped
             </Badge>
             <Badge variant="outline" className="bg-gray-500/20 text-gray-400 border-gray-500/30">
-              05 Unreachable
+              {dashboardStats.offline} Offline
             </Badge>
             <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
-              06 Idle
-            </Badge>
-            <Badge variant="outline" className="bg-orange-500/20 text-orange-400 border-orange-500/30">
-              05 New
+              {dashboardStats.idle} Idle
             </Badge>
           </div>
         </div>
@@ -666,10 +795,10 @@ const VehicleDetails = () => {
         <motion.div
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="fixed bottom-4 right-4 bg-card border border-border/40 rounded-lg p-4 w-80 z-40"
+          className="fixed bottom-4 right-4 bg-card border border-border/40 rounded-lg p-4 w-96 z-40 max-h-96 overflow-y-auto"
         >
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">Driving Behaviour</h3>
+            <h3 className="font-semibold text-sm">AI Driving Behaviour Analysis</h3>
             <Button
               variant="ghost"
               size="sm"
@@ -680,17 +809,53 @@ const VehicleDetails = () => {
             </Button>
           </div>
           
-          <div className="flex items-center gap-4">
+          {/* AI Driving Score */}
+          <div className="mb-4 p-3 bg-background/50 rounded border">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">AI Driving Score</span>
+              <span className={`text-lg font-bold ${
+                aiAnalysis.drivingScore >= 90 ? 'text-green-500' :
+                aiAnalysis.drivingScore >= 75 ? 'text-yellow-500' :
+                aiAnalysis.drivingScore >= 60 ? 'text-orange-500' : 'text-red-500'
+              }`}>
+                {aiAnalysis.drivingScore}/100
+              </span>
+            </div>
+            <Progress value={aiAnalysis.drivingScore} className="h-2" />
+          </div>
+
+          {/* AI Analysis */}
+          <div className="mb-4">
+            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">AI ANALYSIS</h4>
+            <div className="space-y-1">
+              {aiAnalysis.analysis.map((item, index) => (
+                <div key={index} className="text-xs">{item}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Recommendations */}
+          <div className="mb-4">
+            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">RECOMMENDATIONS</h4>
+            <div className="space-y-1">
+              {aiAnalysis.recommendations.map((item, index) => (
+                <div key={index} className="text-xs text-muted-foreground">• {item}</div>
+              ))}
+            </div>
+          </div>
+
+          {/* Behavior Chart */}
+          <div className="flex items-center gap-4 mb-4">
             {/* Pie Chart */}
-            <div className="w-32 h-32">
+            <div className="w-24 h-24">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={drivingBehaviorData}
                     cx="50%"
                     cy="50%"
-                    innerRadius={30}
-                    outerRadius={60}
+                    innerRadius={20}
+                    outerRadius={40}
                     dataKey="value"
                   >
                     {drivingBehaviorData.map((entry, index) => (
@@ -700,31 +865,67 @@ const VehicleDetails = () => {
                   <Tooltip />
                 </PieChart>
               </ResponsiveContainer>
-              <div className="text-center mt-2">
-                <div className="text-lg font-bold">Total</div>
-                <div className="text-sm font-bold">{totalDistance}</div>
-              </div>
             </div>
             
-            {/* Legend */}
-            <div className="flex-1 space-y-2">
+            {/* Legend with Event Counts */}
+            <div className="flex-1 space-y-1">
               {drivingBehaviorData.map((item, index) => (
                 <div key={index} className="flex items-center gap-2">
                   <div 
-                    className="w-3 h-3 rounded-full" 
+                    className="w-2 h-2 rounded-full" 
                     style={{ backgroundColor: item.color }}
                   ></div>
                   <div className="flex-1">
-                    <div className="text-xs text-muted-foreground">{item.name}</div>
-                    <div className="text-sm font-medium">({item.value}%)</div>
+                    <div className="text-xs">{item.name}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {item.count > 0 ? `${item.count} events` : `${item.value}%`}
+                    </div>
                   </div>
                 </div>
               ))}
-              
-              <div className="mt-3 pt-2 border-t border-border/40">
-                <div className="text-xs text-muted-foreground">Harsh Braking</div>
-                <div className="text-lg font-bold text-red-400">Total</div>
-              </div>
+            </div>
+          </div>
+
+          {/* Events Timeline Chart */}
+          <div className="mb-4">
+            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">EVENTS TIMELINE (12H)</h4>
+            <ResponsiveContainer width="100%" height={80}>
+              <LineChart data={drivingEventsChartData}>
+                <XAxis 
+                  dataKey="time" 
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 8 }}
+                />
+                <YAxis hide />
+                <Tooltip />
+                <Line
+                  type="monotone"
+                  dataKey="events"
+                  stroke="#ff6b6b"
+                  strokeWidth={2}
+                  dot={{ r: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* Recent Events */}
+          <div>
+            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">RECENT EVENTS</h4>
+            <div className="space-y-1 max-h-20 overflow-y-auto">
+              {drivingEvents.slice(0, 3).map((event, index) => (
+                <div key={event.id} className="flex items-center gap-2 text-xs">
+                  <event.icon className={`h-3 w-3 ${event.color}`} />
+                  <span className="flex-1">{event.title}</span>
+                  <span className="text-muted-foreground">
+                    {dayjs(event.timestamp).format('HH:mm')}
+                  </span>
+                </div>
+              ))}
+              {drivingEvents.length === 0 && (
+                <div className="text-xs text-muted-foreground">No events recorded today</div>
+              )}
             </div>
           </div>
         </motion.div>
