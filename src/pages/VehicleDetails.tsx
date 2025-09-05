@@ -529,8 +529,11 @@ const VehicleDetails = () => {
                 </Badge>
               </div>
               <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs">
-                  Today: {realVehicleData?.todayOdometer.toFixed(3) || '0.000'} km
+                <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 animate-pulse">
+                  📍 Today: {(realVehicleData?.todayOdometer || 0).toFixed(3)} km
+                </Badge>
+                <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-400">
+                  🛣️ Total: {(realVehicleData?.totalOdometer || 0).toFixed(1)} km
                 </Badge>
                 <div className="flex gap-1">
                   <div className={`w-2 h-2 rounded-full ${realVehicleData?.ignition ? 'bg-green-400' : 'bg-red-400'}`}></div>
@@ -572,31 +575,60 @@ const VehicleDetails = () => {
               </CardContent>
             </Card>
 
-            {/* Last Packet & Today's Odometer */}
-            <Card className="mb-4">
+            {/* Real-time Odometer Tracking */}
+            <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
               <CardContent className="p-3">
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${selectedDevice?.status === 'moving' ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
-                      <span className="text-sm font-medium">Last Packet</span>
+                      <div className={`w-3 h-3 rounded-full ${selectedDevice?.status === 'moving' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
+                      <span className="text-sm font-medium">Real-time Tracking</span>
+                      {selectedDevice?.status === 'moving' && (
+                        <Badge className="text-xs bg-green-500 text-white animate-pulse">LIVE</Badge>
+                      )}
                     </div>
                     <div className="text-xs text-muted-foreground">
                       {dayjs(realVehicleData?.lastUpdate || new Date()).format('DD/MM/YYYY - HH:mm:ss')}
                     </div>
                   </div>
                   
-                  <div className="border-t pt-2">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium text-primary">Today's Odometer</span>
-                      <span className="text-lg font-bold text-primary">
-                        {realVehicleData?.todayOdometer.toFixed(3) || '0.000'} km
-                      </span>
+                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
+                    {/* Today's Distance - Ultra Sensitive */}
+                    <div className="text-center p-2 bg-green-500/10 rounded border border-green-500/20">
+                      <div className="text-xs text-green-600 font-medium mb-1">TODAY'S DISTANCE</div>
+                      <div className="text-xl font-bold text-green-600">
+                        {(realVehicleData?.todayOdometer || 0).toFixed(3)}
+                      </div>
+                      <div className="text-xs text-green-500">km (Live)</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        +{Math.round((realVehicleData?.todayOdometer || 0) * 1000)}m since 12pm
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Total: {realVehicleData?.totalOdometer.toLocaleString() || '0'} km
+                    
+                    {/* Total Distance - Live Update */}
+                    <div className="text-center p-2 bg-purple-500/10 rounded border border-purple-500/20">
+                      <div className="text-xs text-purple-600 font-medium mb-1">TOTAL DISTANCE</div>
+                      <div className="text-xl font-bold text-purple-600">
+                        {(realVehicleData?.totalOdometer || 0).toFixed(1)}
+                      </div>
+                      <div className="text-xs text-purple-500">km (Lifetime)</div>
+                      <div className="text-xs text-muted-foreground mt-1">
+                        Every meter tracked
+                      </div>
                     </div>
                   </div>
+
+                  {/* Movement Indicator */}
+                  {selectedDevice?.status === 'moving' && (
+                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-green-500/20">
+                      <div className="flex space-x-1">
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
+                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
+                      </div>
+                      <span className="text-xs text-green-600 font-medium">Vehicle Moving - Distance Updating</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
