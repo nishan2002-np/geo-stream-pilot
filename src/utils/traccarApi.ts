@@ -441,16 +441,23 @@ class TraccarAPI {
       }
       
       // Ultra-sensitive real-time tracking - track every 1m movement
-      const timeDiff = Math.min((now - lastUpdate) / 1000, 10); // seconds, max 10s gap for real-time
+      const timeDiff = Math.min((now - lastUpdate) / 1000, 5); // seconds, max 5s gap for real-time
       
-      // ULTRA SENSITIVE - Even 0.1km/h shows and minimum 2m increment per update for moving vehicles
+      // ULTRA SENSITIVE - Even 0.1km/h shows immediate odometer update
       let increment = 0;
-      if (speed > 0) { // ANY movement at all
-        increment = Math.max(0.002, (speed * timeDiff) / 3600); // Minimum 2m (0.002km) per update
+      if (speed > 0.1) { // ANY movement above 0.1 km/h
+        // Calculate distance based on speed and time
+        const distanceKm = (speed * timeDiff) / 3600; // km = speed(km/h) * time(s) / 3600
+        increment = Math.max(0.001, distanceKm); // Minimum 1m (0.001km) per update
         
-        // Extra increment for active testing vehicles to show clear movement
-        if (deviceId === 1 && speed > 10) {
-          increment = Math.max(increment, 0.005); // 5m minimum for fast moving vehicle
+        // Force minimum increment for any moving vehicle to ensure visible updates
+        if (speed > 1) {
+          increment = Math.max(increment, 0.002); // 2m minimum for vehicles moving >1km/h
+        }
+        
+        // Extra increment for fast moving vehicles to show clear movement
+        if (speed > 20) {
+          increment = Math.max(increment, 0.005); // 5m minimum for vehicles moving >20km/h
         }
       }
       
