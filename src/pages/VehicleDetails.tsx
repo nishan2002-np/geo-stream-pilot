@@ -46,6 +46,7 @@ import {
   Bell,
 } from 'lucide-react';
 import { Device, Position } from '@/types/tracking';
+import MobileMenu from '@/components/MobileMenu';
 import traccarApi from '@/utils/traccarApi';
 import MapView from '@/components/MapView';
 import DeviceList from '@/components/DeviceList';
@@ -286,50 +287,63 @@ const VehicleDetails = () => {
         animate={{ y: 0, opacity: 1 }}
         className="border-b border-border/40 bg-card/50 backdrop-blur-lg"
       >
-        <div className="flex items-center justify-between px-4 py-2">
-          <div className="flex items-center gap-4">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between px-3 sm:px-4 py-2">
+          <div className="flex items-center justify-between mb-2 lg:mb-0">
             <div className="flex items-center gap-2">
-              <Navigation className="h-6 w-6 text-primary" />
-              <h1 className="text-lg font-bold">Vehicle Tracking System</h1>
+              <Navigation className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
+              <h1 className="text-base sm:text-lg font-bold">
+                <span className="hidden sm:inline">Vehicle Tracking System</span>
+                <span className="sm:hidden">Vehicle Tracker</span>
+              </h1>
             </div>
             
-            {/* Header Controls */}
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search Vehicle"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 w-40 h-8 text-sm"
-                />
-              </div>
-              <Button variant="outline" size="sm" className="h-8">
-                <Filter className="h-3 w-3 mr-1" />
-                Filter
-              </Button>
-              <Button variant="outline" size="sm" className="h-8">
-                <Settings className="h-3 w-3 mr-1" />
-                Setting
-              </Button>
+            {/* Mobile Controls */}
+            <div className="flex lg:hidden items-center gap-2">
+              <MobileMenu 
+                searchQuery={searchQuery}
+                onSearchChange={setSearchQuery}
+                alerts={alerts}
+                currentPage="vehicle"
+              />
             </div>
+          </div>
+          
+          {/* Desktop Header Controls */}
+          <div className="hidden lg:flex items-center gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search Vehicle"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 w-40 h-8 text-sm"
+              />
+            </div>
+            <Button variant="outline" size="sm" className="h-8">
+              <Filter className="h-3 w-3 mr-1" />
+              Filter
+            </Button>
+            <Button variant="outline" size="sm" className="h-8">
+              <Settings className="h-3 w-3 mr-1" />
+              Setting
+            </Button>
           </div>
 
           {/* Status Badges */}
-          <div className="flex items-center gap-2">
-            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30">
+          <div className="flex items-center gap-1 sm:gap-2 overflow-x-auto">
+            <Badge variant="outline" className="bg-blue-500/20 text-blue-400 border-blue-500/30 text-xs whitespace-nowrap">
               {dashboardStats.all} All
             </Badge>
-            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30">
+            <Badge variant="outline" className="bg-green-500/20 text-green-400 border-green-500/30 text-xs whitespace-nowrap">
               {dashboardStats.running} Moving
             </Badge>
-            <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30">
+            <Badge variant="outline" className="bg-red-500/20 text-red-400 border-red-500/30 text-xs whitespace-nowrap">
               {dashboardStats.stopped} Stopped
             </Badge>
-            <Badge variant="outline" className="bg-gray-500/20 text-gray-400 border-gray-500/30">
+            <Badge variant="outline" className="bg-gray-500/20 text-gray-400 border-gray-500/30 text-xs whitespace-nowrap">
               {dashboardStats.offline} Offline
             </Badge>
-            <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">
+            <Badge variant="outline" className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-xs whitespace-nowrap">
               {dashboardStats.idle} Idle
             </Badge>
           </div>
@@ -344,10 +358,10 @@ const VehicleDetails = () => {
             initial={{ x: 300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: 300, opacity: 0 }}
-            className={`fixed top-20 right-4 z-50`}
-            style={{ top: `${80 + index * 80}px` }}
+            className={`fixed top-16 sm:top-20 right-2 sm:right-4 z-50`}
+            style={{ top: `${64 + index * 70}px` }}
           >
-            <Alert className="w-80 bg-card border-l-4 border-l-red-500 shadow-lg">
+            <Alert className="w-72 sm:w-80 bg-card border-l-4 border-l-red-500 shadow-lg">
               <div className="flex items-center gap-3">
                 <alert.icon className={`h-5 w-5 ${alert.color}`} />
                 <div className="flex-1">
@@ -374,12 +388,12 @@ const VehicleDetails = () => {
       </AnimatePresence>
 
       {/* Main Content */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden flex-col lg:flex-row">
         {/* Left Sidebar - Alerts Panel */}
         <motion.aside
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-80 border-r border-border/40 bg-sidebar/95 backdrop-blur-lg overflow-y-auto"
+          className="w-full lg:w-80 max-h-64 lg:max-h-none border-b lg:border-b-0 lg:border-r border-border/40 bg-sidebar/95 backdrop-blur-lg overflow-y-auto"
         >
           {/* Alerts based on device logic */}
           <div className="flex flex-col h-full">
@@ -472,7 +486,7 @@ const VehicleDetails = () => {
         <motion.div 
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          className="flex-1 relative"
+          className="flex-1 relative min-h-[300px] lg:min-h-0 min-w-0"
         >
           <MapView
             devices={devices}
@@ -488,16 +502,16 @@ const VehicleDetails = () => {
           />
           
           {/* Route Deviation Alert */}
-          <div className="absolute top-4 left-4 bg-red-500 text-white px-3 py-1 rounded text-sm font-medium">
+          <div className="absolute top-2 left-2 sm:top-4 sm:left-4 bg-red-500 text-white px-2 py-1 sm:px-3 sm:py-1 rounded text-xs sm:text-sm font-medium">
             Route Deviated
           </div>
         </motion.div>
 
-        {/* Right Sidebar - Vehicle List */}
+        {/* Right Sidebar - Vehicle List (Hidden on smaller screens) */}
         <motion.aside
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
-          className="w-80 border-l border-border/40 bg-sidebar/95 backdrop-blur-lg"
+          className="hidden xl:block w-80 border-l border-border/40 bg-sidebar/95 backdrop-blur-lg"
         >
           <div className="p-3">
             <div className="flex items-center justify-between mb-3">
@@ -524,12 +538,12 @@ const VehicleDetails = () => {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-2 sm:p-4"
         >
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card rounded-lg p-4 w-full max-w-4xl max-h-[80vh]"
+            className="bg-card rounded-lg p-3 sm:p-4 w-full max-w-4xl max-h-[90vh] sm:max-h-[80vh]"
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">Camera Feed - {selectedDevice?.name}</h3>

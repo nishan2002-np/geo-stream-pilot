@@ -21,6 +21,7 @@ import {
   AlertTriangle,
   MapPin
 } from 'lucide-react';
+import MobileMenu from '@/components/MobileMenu';
 import traccarApi from '@/utils/traccarApi';
 import { Device, Position } from '@/types/tracking';
 
@@ -207,16 +208,17 @@ const Dashboard = () => {
         animate={{ y: 0, opacity: 1 }}
         className="border-b border-border/40 bg-card/50 backdrop-blur-lg"
       >
-        <div className="flex items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <Navigation className="h-8 w-8 text-primary" />
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                GPS Tracker Pro
+        <div className="flex items-center justify-between px-3 sm:px-6 py-3 sm:py-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <div className="flex items-center gap-1 sm:gap-2">
+              <Navigation className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <h1 className="text-lg sm:text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                <span className="hidden sm:inline">GPS Tracker Pro</span>
+                <span className="sm:hidden">GPS</span>
               </h1>
             </div>
             
-            <div className="hidden md:flex items-center gap-4 text-sm">
+            <div className="hidden lg:flex items-center gap-4 text-sm">
               <Badge variant="outline" className="badge-online">
                 <Activity className="h-3 w-3 mr-1" />
                 {onlineDevices} Online
@@ -234,28 +236,53 @@ const Dashboard = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
-            <Link to="/vehicle/1">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <MobileMenu 
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              alerts={alerts}
+              currentPage="dashboard"
+            />
+            
+            <Link to="/vehicle/1" className="hidden sm:block">
               <Button variant="outline" size="sm">
                 <MapPin className="h-4 w-4 mr-2" />
-                View Vehicle Details
+                <span className="hidden md:inline">View Vehicle Details</span>
+                <span className="md:hidden">Vehicle</span>
               </Button>
             </Link>
-            <div className="relative">
+            <div className="relative hidden md:block">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search devices..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 w-64 bg-background/50"
+                className="pl-10 w-48 lg:w-64 bg-background/50"
               />
             </div>
             
-            <Button variant="outline" size="sm">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
+            <Button variant="outline" size="sm" className="hidden sm:flex">
+              <Settings className="h-4 w-4 sm:mr-2" />
+              <span className="hidden sm:inline">Settings</span>
             </Button>
           </div>
+        </div>
+
+        {/* Mobile Status Bar */}
+        <div className="flex lg:hidden items-center justify-between px-3 py-2 border-t border-border/20">
+          <div className="flex items-center gap-2 text-xs">
+            <Badge variant="outline" className="badge-online text-xs px-1">
+              {onlineDevices} Online
+            </Badge>
+            <Badge variant="outline" className="badge-moving text-xs px-1">
+              {movingDevices} Moving
+            </Badge>
+          </div>
+          <Link to="/vehicle/1" className="sm:hidden">
+            <Button variant="outline" size="sm">
+              <MapPin className="h-4 w-4" />
+            </Button>
+          </Link>
         </div>
       </motion.header>
 
@@ -267,7 +294,7 @@ const Dashboard = () => {
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.1 }}
           className={`${
-            sidebarCollapsed ? 'w-16' : 'w-80'
+            sidebarCollapsed ? 'w-12 md:w-16' : 'w-72 sm:w-80'
           } transition-all duration-300 border-r border-border/40 bg-sidebar backdrop-blur-lg`}
         >
           <DeviceList
@@ -287,7 +314,7 @@ const Dashboard = () => {
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ delay: 0.2 }}
-          className="flex-1 relative"
+          className="flex-1 relative min-w-0"
         >
           <MapView
             devices={devices}
@@ -298,12 +325,12 @@ const Dashboard = () => {
           />
         </motion.div>
 
-        {/* Right Sidebar - Alerts */}
+        {/* Right Sidebar - Alerts (Hidden on mobile/tablet) */}
         <motion.aside
           initial={{ x: 20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           transition={{ delay: 0.3 }}
-          className="w-80 border-l border-border/40 bg-sidebar backdrop-blur-lg"
+          className="hidden xl:block w-80 border-l border-border/40 bg-sidebar backdrop-blur-lg"
         >
           <AlertsPanel
             alerts={alerts}
