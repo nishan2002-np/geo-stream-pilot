@@ -267,137 +267,6 @@ const VehicleDetails = () => {
     unreachable: devices.filter(d => d.status === 'offline').length
   };
 
-  // Generate fuel chart data based on real today's odometer
-  const fuelChartData = [];
-  const now = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const timestamp = new Date(now.getTime() - i * 60 * 60 * 1000);
-    const baseFuel = realVehicleData?.fuelRemaining || 260;
-    const variation = (Math.random() - 0.5) * 20;
-    const fuelLevel = Math.max(10, baseFuel + variation);
-    fuelChartData.push({
-      time: dayjs(timestamp).format('HH:mm'),
-      fuel: ((fuelLevel / 260) * 100),
-    });
-  }
-
-  // Generate driving behavior data based on real events
-  const drivingBehaviorData = (() => {
-    const eventCounts = {
-      'harsh-cornering': drivingEvents.filter(e => e.type === 'harsh-cornering').length,
-      'harsh-braking': drivingEvents.filter(e => e.type === 'harsh-braking').length,
-      'harsh-acceleration': drivingEvents.filter(e => e.type === 'harsh-acceleration').length,
-      'driver-missing': drivingEvents.filter(e => e.type === 'driver-missing').length
-    };
-    
-    const totalEvents = Object.values(eventCounts).reduce((a, b) => a + b, 0);
-    const normalDriving = Math.max(0, 100 - totalEvents * 2); // Each event reduces normal driving by 2%
-    
-    return [
-      { 
-        name: 'Harsh Cornering', 
-        value: totalEvents > 0 ? Math.round((eventCounts['harsh-cornering'] / totalEvents) * (100 - normalDriving)) : 0, 
-        color: '#ff6b6b',
-        count: eventCounts['harsh-cornering']
-      },
-      { 
-        name: 'Harsh Braking', 
-        value: totalEvents > 0 ? Math.round((eventCounts['harsh-braking'] / totalEvents) * (100 - normalDriving)) : 0, 
-        color: '#4ecdc4',
-        count: eventCounts['harsh-braking']
-      },
-      { 
-        name: 'Harsh Acceleration', 
-        value: totalEvents > 0 ? Math.round((eventCounts['harsh-acceleration'] / totalEvents) * (100 - normalDriving)) : 0, 
-        color: '#45b7d1',
-        count: eventCounts['harsh-acceleration']
-      },
-      { 
-        name: 'Normal Driving', 
-        value: Math.round(normalDriving), 
-        color: '#96ceb4',
-        count: 0
-      },
-    ];
-  })();
-
-  // Generate driving events chart data
-  const drivingEventsChartData = [];
-  const currentTime = new Date();
-  for (let i = 11; i >= 0; i--) {
-    const timestamp = new Date(currentTime.getTime() - i * 60 * 60 * 1000);
-    const hourEvents = drivingEvents.filter(event => {
-      const eventTime = new Date(event.timestamp);
-      return eventTime >= new Date(timestamp.getTime() - 30 * 60 * 1000) && eventTime < new Date(timestamp.getTime() + 30 * 60 * 1000);
-    });
-    
-    drivingEventsChartData.push({
-      time: dayjs(timestamp).format('HH:mm'),
-      events: hourEvents.length,
-      harshBraking: hourEvents.filter(e => e.type === 'harsh-braking').length,
-      harshCornering: hourEvents.filter(e => e.type === 'harsh-cornering').length,
-      harshAcceleration: hourEvents.filter(e => e.type === 'harsh-acceleration').length,
-    });
-  }
-
-  // AI Driving Analysis
-  const generateAIAnalysis = () => {
-    const totalEvents = drivingEvents.length;
-    const harshBrakingCount = drivingEvents.filter(e => e.type === 'harsh-braking').length;
-    const harshCorneringCount = drivingEvents.filter(e => e.type === 'harsh-cornering').length; 
-    const harshAccelerationCount = drivingEvents.filter(e => e.type === 'harsh-acceleration').length;
-    const driverMissingCount = drivingEvents.filter(e => e.type === 'driver-missing').length;
-
-    let drivingScore = 100;
-    let analysis = [];
-    let recommendations = [];
-
-    // Calculate driving score
-    drivingScore -= harshBrakingCount * 5; // -5 points per harsh braking
-    drivingScore -= harshCorneringCount * 4; // -4 points per harsh cornering
-    drivingScore -= harshAccelerationCount * 3; // -3 points per harsh acceleration
-    drivingScore -= driverMissingCount * 2; // -2 points per driver missing
-    drivingScore = Math.max(0, Math.min(100, drivingScore));
-
-    // Generate analysis
-    if (drivingScore >= 90) {
-      analysis.push("🟢 Excellent driving behavior detected");
-      recommendations.push("Continue maintaining safe driving practices");
-    } else if (drivingScore >= 75) {
-      analysis.push("🟡 Good driving with room for improvement");
-      recommendations.push("Focus on smoother acceleration and braking");
-    } else if (drivingScore >= 60) {
-      analysis.push("🟠 Average driving behavior with safety concerns");
-      recommendations.push("Consider driver training for safer habits");
-    } else {
-      analysis.push("🔴 Poor driving behavior - immediate attention required");
-      recommendations.push("Urgent driver coaching needed for safety");
-    }
-
-    // Specific behavior analysis
-    if (harshBrakingCount > 5) {
-      analysis.push(`⚠️ Frequent harsh braking detected (${harshBrakingCount} events)`);
-      recommendations.push("Maintain safe following distance and anticipate traffic");
-    }
-    
-    if (harshCorneringCount > 3) {
-      analysis.push(`⚠️ Aggressive cornering behavior (${harshCorneringCount} events)`);
-      recommendations.push("Reduce speed when turning and follow proper cornering techniques");
-    }
-
-    if (harshAccelerationCount > 3) {
-      analysis.push(`⚠️ Excessive acceleration detected (${harshAccelerationCount} events)`);
-      recommendations.push("Practice gradual acceleration to improve fuel efficiency");
-    }
-
-    return { drivingScore, analysis, recommendations };
-  };
-
-  const aiAnalysis = generateAIAnalysis();
-
-  const totalTrips = 1543;
-  const totalDistance = `${totalTrips} km`;
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -506,234 +375,96 @@ const VehicleDetails = () => {
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar - Vehicle Details */}
+        {/* Left Sidebar - Alerts Panel */}
         <motion.aside
           initial={{ x: -20, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           className="w-80 border-r border-border/40 bg-sidebar/95 backdrop-blur-lg overflow-y-auto"
         >
-          <div className="p-4">
-            {/* Vehicle Header */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
-                  selectedDevice?.status === 'moving' ? 'bg-green-500' :
-                  selectedDevice?.status === 'stopped' ? 'bg-yellow-500' :
-                  'bg-red-500'
-                }`}>
-                  <div className="w-2 h-2 bg-white rounded-full"></div>
-                </div>
-                <h2 className="font-bold text-lg">{selectedDevice?.name || 'Loading...'}</h2>
-                <Badge className="text-xs">
-                  {selectedDevice?.status || 'unknown'}
-                </Badge>
+          {/* Alerts based on device logic */}
+          <div className="flex flex-col h-full">
+            <div className="p-4 border-b border-sidebar-border">
+              <div className="flex items-center gap-2 mb-4">
+                <Bell className="h-5 w-5 text-warning" />
+                <h2 className="text-lg font-semibold">Vehicle Alerts</h2>
+                {alerts.length > 0 && (
+                  <Badge variant="destructive" className="text-xs">
+                    {alerts.length}
+                  </Badge>
+                )}
               </div>
-              <div className="flex items-center gap-2">
-                <Badge variant="outline" className="text-xs bg-green-500/20 text-green-400 animate-pulse">
-                  📍 Today: {(realVehicleData?.todayOdometer || 0).toFixed(3)} km
-                </Badge>
-                <Badge variant="outline" className="text-xs bg-purple-500/20 text-purple-400">
-                  🛣️ Total: {(realVehicleData?.totalOdometer || 0).toFixed(1)} km
-                </Badge>
-                <div className="flex gap-1">
-                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.ignition ? 'bg-green-400' : 'bg-red-400'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.batteryLevel > 50 ? 'bg-green-400' : 'bg-yellow-400'}`}></div>
-                  <div className={`w-2 h-2 rounded-full ${realVehicleData?.signalStrength > 70 ? 'bg-green-400' : 'bg-orange-400'}`}></div>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-2 gap-2 mb-4">
+                <div className="bg-background/20 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-red-400">
+                    {alerts.filter(a => a.severity === 'high').length}
+                  </div>
+                  <div className="text-xs text-muted-foreground">Critical</div>
                 </div>
-              </div>
-            </div>
-
-            {/* Address Information */}
-            <Card className="mb-4">
-              <CardContent className="p-3">
-                <div className="space-y-3">
-                  {/* Current Address */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-3 h-3 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
-                    <div className="flex-1">
-                      <div className="text-xs text-muted-foreground">Current Address</div>
-                      <div className="text-sm font-medium">
-                        {realVehicleData?.address}
-                      </div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        {selectedPosition?.latitude.toFixed(6)}, {selectedPosition?.longitude.toFixed(6)}
-                      </div>
-                    </div>
+                <div className="bg-background/20 rounded-lg p-2 text-center">
+                  <div className="text-lg font-bold text-yellow-400">
+                    {alerts.filter(a => a.severity === 'medium').length}
                   </div>
-                  
-                  {/* Speed & Course */}
-                  <div className="flex items-start gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
-                    <div className="flex-1">
-                      <div className="text-xs text-muted-foreground">Speed & Direction</div>
-                      <div className="text-sm font-medium">
-                        {realVehicleData?.currentSpeed} km/h → {realVehicleData?.course}°
-                      </div>
-                    </div>
-                  </div>
+                  <div className="text-xs text-muted-foreground">Warning</div>
                 </div>
-              </CardContent>
-            </Card>
-
-            {/* Real-time Odometer Tracking */}
-            <Card className="mb-4 bg-gradient-to-r from-green-500/10 to-blue-500/10 border-green-500/20">
-              <CardContent className="p-3">
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className={`w-3 h-3 rounded-full ${selectedDevice?.status === 'moving' ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'}`}></div>
-                      <span className="text-sm font-medium">Real-time Tracking</span>
-                      {selectedDevice?.status === 'moving' && (
-                        <Badge className="text-xs bg-green-500 text-white animate-pulse">LIVE</Badge>
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {dayjs(realVehicleData?.lastUpdate || new Date()).format('DD/MM/YYYY - HH:mm:ss')}
-                    </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t">
-                    {/* Today's Distance - Ultra Sensitive */}
-                    <div className="text-center p-2 bg-green-500/10 rounded border border-green-500/20">
-                      <div className="text-xs text-green-600 font-medium mb-1">TODAY'S DISTANCE</div>
-                      <div className="text-xl font-bold text-green-600">
-                        {(realVehicleData?.todayOdometer || 0).toFixed(3)}
-                      </div>
-                      <div className="text-xs text-green-500">km (Live)</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        +{Math.round((realVehicleData?.todayOdometer || 0) * 1000)}m since 12pm
-                      </div>
-                    </div>
-                    
-                    {/* Total Distance - Live Update */}
-                    <div className="text-center p-2 bg-purple-500/10 rounded border border-purple-500/20">
-                      <div className="text-xs text-purple-600 font-medium mb-1">TOTAL DISTANCE</div>
-                      <div className="text-xl font-bold text-purple-600">
-                        {(realVehicleData?.totalOdometer || 0).toFixed(1)}
-                      </div>
-                      <div className="text-xs text-purple-500">km (Lifetime)</div>
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Every meter tracked
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Movement Indicator */}
-                  {selectedDevice?.status === 'moving' && (
-                    <div className="flex items-center justify-center gap-2 pt-2 border-t border-green-500/20">
-                      <div className="flex space-x-1">
-                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse"></div>
-                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.2s'}}></div>
-                        <div className="w-1 h-1 bg-green-500 rounded-full animate-pulse" style={{animationDelay: '0.4s'}}></div>
-                      </div>
-                      <span className="text-xs text-green-600 font-medium">Vehicle Moving - Distance Updating</span>
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Live Vehicle Stats */}
-            <Card className="mb-4">
-              <CardContent className="p-3">
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Gauge className="h-4 w-4 text-primary" />
-                      <span className="text-sm font-medium">Speed</span>
-                    </div>
-                    <span className={`text-sm font-medium ${realVehicleData?.currentSpeed > 0 ? 'text-green-500' : 'text-muted-foreground'}`}>
-                      {realVehicleData?.currentSpeed || 0} km/h
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Fuel className="h-4 w-4 text-blue-500" />
-                      <span className="text-sm font-medium">Fuel</span>
-                    </div>
-                    <span className="text-sm font-medium">
-                      {realVehicleData?.fuelRemaining || 260}L / 260L
-                    </span>
-                  </div>
-                  
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <Battery className="h-4 w-4 text-green-500" />
-                      <span className="text-sm font-medium">Battery</span>
-                    </div>
-                    <span className="text-sm font-medium">
-                      {realVehicleData?.batteryLevel || 100}%
-                    </span>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Total Distance */}
-            <Card className="mb-4">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Activity className="h-4 w-4 text-accent" />
-                    <span className="text-sm font-medium">Total Distance</span>
-                  </div>
-                  <span className="text-sm font-medium">15 Km</span>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Status Indicators */}
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="flex items-center gap-2 p-2 bg-card rounded border">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-xs">Refuel</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-card rounded border">
-                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                <span className="text-xs">Absolute Mileage</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-card rounded border">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-xs">Ignition</span>
-              </div>
-              <div className="flex items-center gap-2 p-2 bg-card rounded border">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-xs">Fuel Drained</span>
               </div>
             </div>
 
-            {/* Fuel Level Chart */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm">Fuel Level</CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0">
-                <ResponsiveContainer width="100%" height={120}>
-                  <LineChart data={fuelChartData}>
-                    <XAxis 
-                      dataKey="time" 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <YAxis 
-                      axisLine={false}
-                      tickLine={false}
-                      tick={{ fontSize: 10 }}
-                    />
-                    <Tooltip />
-                    <Line
-                      type="monotone"
-                      dataKey="fuel"
-                      stroke="#2563eb"
-                      strokeWidth={2}
-                      dot={false}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
+            {/* Real-time alerts display */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3">
+              <AnimatePresence>
+                {alerts.length === 0 ? (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-center py-8 text-muted-foreground"
+                  >
+                    <Bell className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p className="text-sm">No active alerts</p>
+                    <p className="text-xs mt-1">System monitoring for events...</p>
+                  </motion.div>
+                ) : (
+                  alerts.map((alert, index) => (
+                    <motion.div
+                      key={alert.id}
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ delay: index * 0.1 }}
+                      className={`p-3 rounded-lg border ${
+                        alert.severity === 'high' ? 'border-red-500/30 bg-red-500/10' :
+                        alert.severity === 'medium' ? 'border-yellow-500/30 bg-yellow-500/10' :
+                        'border-blue-500/30 bg-blue-500/10'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <alert.icon className={`h-5 w-5 mt-0.5 ${alert.color}`} />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge 
+                              variant="outline" 
+                              className={`text-xs ${
+                                alert.severity === 'high' ? 'border-red-500/50 text-red-400' :
+                                alert.severity === 'medium' ? 'border-yellow-500/50 text-yellow-400' :
+                                'border-blue-500/50 text-blue-400'
+                              }`}
+                            >
+                              {alert.severity}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">
+                              {dayjs(alert.timestamp).format('HH:mm:ss')}
+                            </span>
+                          </div>
+                          <h4 className="font-medium text-sm mb-1">{alert.title}</h4>
+                          <p className="text-xs text-muted-foreground">{alert.message}</p>
+                        </div>
+                      </div>
+                    </motion.div>
+                  ))
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </motion.aside>
 
@@ -798,168 +529,26 @@ const VehicleDetails = () => {
           <motion.div
             initial={{ scale: 0.9, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-card border border-border/40 rounded-lg p-4 w-96 h-64"
+            className="bg-card rounded-lg p-4 w-full max-w-4xl max-h-[80vh]"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-sm">FOOTAGE AU_JUFUD</h3>
+              <h3 className="text-lg font-semibold">Camera Feed - {selectedDevice?.name}</h3>
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowCameraFeed(false)}
-                className="h-6 w-6 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
             </div>
             
-            <div className="bg-black rounded h-40 flex items-center justify-center relative">
-              <div className="text-white text-xs absolute bottom-2 left-2">
-                09-04-2023 - 16:19:26
-              </div>
-              <Camera className="h-8 w-8 text-white/50" />
+            <div className="aspect-video bg-black rounded-lg overflow-hidden">
+              <VideoPlayer
+                deviceId={deviceId || 0}
+                attributes={selectedPosition?.attributes || {}}
+              />
             </div>
           </motion.div>
-        </motion.div>
-      )}
-
-      {/* Driving Behavior Popup */}
-      {showDrivingBehavior && (
-        <motion.div
-          initial={{ x: 20, opacity: 0 }}
-          animate={{ x: 0, opacity: 1 }}
-          className="fixed bottom-4 right-4 bg-card border border-border/40 rounded-lg p-4 w-96 z-40 max-h-96 overflow-y-auto"
-        >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-sm">AI Driving Behaviour Analysis</h3>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowDrivingBehavior(false)}
-              className="h-6 w-6 p-0"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-          
-          {/* AI Driving Score */}
-          <div className="mb-4 p-3 bg-background/50 rounded border">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium">AI Driving Score</span>
-              <span className={`text-lg font-bold ${
-                aiAnalysis.drivingScore >= 90 ? 'text-green-500' :
-                aiAnalysis.drivingScore >= 75 ? 'text-yellow-500' :
-                aiAnalysis.drivingScore >= 60 ? 'text-orange-500' : 'text-red-500'
-              }`}>
-                {aiAnalysis.drivingScore}/100
-              </span>
-            </div>
-            <Progress value={aiAnalysis.drivingScore} className="h-2" />
-          </div>
-
-          {/* AI Analysis */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">AI ANALYSIS</h4>
-            <div className="space-y-1">
-              {aiAnalysis.analysis.map((item, index) => (
-                <div key={index} className="text-xs">{item}</div>
-              ))}
-            </div>
-          </div>
-
-          {/* Recommendations */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">RECOMMENDATIONS</h4>
-            <div className="space-y-1">
-              {aiAnalysis.recommendations.map((item, index) => (
-                <div key={index} className="text-xs text-muted-foreground">• {item}</div>
-              ))}
-            </div>
-          </div>
-
-          {/* Behavior Chart */}
-          <div className="flex items-center gap-4 mb-4">
-            {/* Pie Chart */}
-            <div className="w-24 h-24">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={drivingBehaviorData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={20}
-                    outerRadius={40}
-                    dataKey="value"
-                  >
-                    {drivingBehaviorData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            
-            {/* Legend with Event Counts */}
-            <div className="flex-1 space-y-1">
-              {drivingBehaviorData.map((item, index) => (
-                <div key={index} className="flex items-center gap-2">
-                  <div 
-                    className="w-2 h-2 rounded-full" 
-                    style={{ backgroundColor: item.color }}
-                  ></div>
-                  <div className="flex-1">
-                    <div className="text-xs">{item.name}</div>
-                    <div className="text-xs text-muted-foreground">
-                      {item.count > 0 ? `${item.count} events` : `${item.value}%`}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Events Timeline Chart */}
-          <div className="mb-4">
-            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">EVENTS TIMELINE (12H)</h4>
-            <ResponsiveContainer width="100%" height={80}>
-              <LineChart data={drivingEventsChartData}>
-                <XAxis 
-                  dataKey="time" 
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 8 }}
-                />
-                <YAxis hide />
-                <Tooltip />
-                <Line
-                  type="monotone"
-                  dataKey="events"
-                  stroke="#ff6b6b"
-                  strokeWidth={2}
-                  dot={{ r: 2 }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Recent Events */}
-          <div>
-            <h4 className="text-xs font-semibold mb-2 text-muted-foreground">RECENT EVENTS</h4>
-            <div className="space-y-1 max-h-20 overflow-y-auto">
-              {drivingEvents.slice(0, 3).map((event, index) => (
-                <div key={event.id} className="flex items-center gap-2 text-xs">
-                  <event.icon className={`h-3 w-3 ${event.color}`} />
-                  <span className="flex-1">{event.title}</span>
-                  <span className="text-muted-foreground">
-                    {dayjs(event.timestamp).format('HH:mm')}
-                  </span>
-                </div>
-              ))}
-              {drivingEvents.length === 0 && (
-                <div className="text-xs text-muted-foreground">No events recorded today</div>
-              )}
-            </div>
-          </div>
         </motion.div>
       )}
     </div>
